@@ -55,36 +55,67 @@ class ResponseParser:
     @staticmethod
     def parse_question_response(response: str) -> Dict[str, Any]:
         """
-        Parse question-answer response.
+        Parse structured VLM response.
 
         Args:
-            response: Raw API response
+            response: Raw API response containing JSON
 
         Returns:
-            Structured Q&A data
+            Structured data with objects and scene info
         """
-        logger.debug("Parsing question response")
+        logger.debug("Parsing VLM response")
         
         try:
-            # SKELETON: Implement response parsing
-            # Expected structure:
-            # {
-            #   "question": "...",
-            #   "answer": "...",
-            #   "confidence": 0.85,
-            #   "reasoning": "..."
-            # }
+            # Extract JSON from response
+            json_data = ResponseParser.extract_json(response)
+            if not json_data:
+                logger.warning("No JSON found in response")
+                return {
+                    "objects": [],
+                    "scene": {
+                        "flooring_type": "unknown",
+                        "lighting": "unknown",
+                        "is_partial_view": True
+                    },
+                    "raw_response": response,
+                }
             
-            parsed = {
-                "answer": None,
-                "confidence": None,
+            # Validate structure
+            if "objects" not in json_data:
+                json_data["objects"] = []
+            if "scene" not in json_data:
+                json_data["scene"] = {
+                    "flooring_type": "unknown",
+                    "lighting": "unknown",
+                    "is_partial_view": True
+                }
+            
+            # Ensure objects have required fields
+            for obj in json_data["objects"]:
+                if "attributes" not in obj:
+                    obj["attributes"] = {}
+                if "text" not in obj:
+                    obj["text"] = {"detected": "", "confidence": 0.0}
+                if "confidence" not in obj:
+                    obj["confidence"] = 0.5
+                if "category_hint" not in obj:
+                    obj["category_hint"] = ""
+            
+            json_data["raw_response"] = response
+            return json_data
+            
+        except Exception as e:
+            logger.error(f"Failed to parse VLM response: {str(e)}", exc_info=e)
+            return {
+                "objects": [],
+                "scene": {
+                    "flooring_type": "unknown",
+                    "lighting": "unknown",
+                    "is_partial_view": True
+                },
+                "error": str(e),
                 "raw_response": response,
             }
-            
-            return parsed
-        except Exception as e:
-            logger.error(f"Failed to parse question response: {str(e)}", exc_info=e)
-            return {"error": str(e), "raw_response": response}
 
     @staticmethod
     def extract_json(response: str) -> Optional[Dict[str, Any]]:
@@ -96,19 +127,37 @@ class ResponseParser:
 
         Returns:
             Parsed JSON or None
-
-        Note:
-            Skeleton - implement JSON extraction from text.
         """
         logger.debug("Extracting JSON from response")
         
         try:
-            # SKELETON: Look for JSON in response and parse it
-            json_str = response  # May need to extract from markdown, etc
-            parsed = json.loads(json_str)
+            # Try to parse the entire response as JSON
+            parsed = json.loads(response.strip())
             return parsed
-        except json.JSONDecodeError as e:
-            logger.warning(f"Failed to extract JSON: {str(e)}")
+        except json.JSONDecodeError:
+            # Try to find JSON within the response (between ```json and ``` or similar)
+            import re
+            json_pattern = r'```(?:json)?\s*(\{.*?\})\s*```'
+            match = re.search(json_pattern, response, re.DOTALL)
+            if match:
+                try:
+                    parsed = json.loads(match.group(1))
+                    return parsed
+                except json.JSONDecodeError:
+                    pass
+            
+            # Try to find JSON object directly
+            start = response.find('{')
+            end = response.rfind('}') + 1
+            if start != -1 and end > start:
+                try:
+                    json_str = response[start:end]
+                    parsed = json.loads(json_str)
+                    return parsed
+                except json.JSONDecodeError:
+                    pass
+            
+            logger.warning("No valid JSON found in response")
             return None
 
     @staticmethod

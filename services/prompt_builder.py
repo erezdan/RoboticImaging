@@ -95,12 +95,42 @@ class PromptBuilder:
         """
         logger.debug(f"Building general prompt: {task}")
         
-        prompt = f"""
-        Please analyze the provided images for the following task:
-        
-        Task: {task}
-        
-        Provide detailed analysis with observations and any relevant findings.
+        prompt = """
+        Analyze the provided images and extract all visible objects and scene information.
+
+        Return ONLY a valid JSON object with the following structure:
+
+        {
+          "objects": [
+            {
+              "type": "string",
+              "category_hint": "string",
+              "confidence": 0.0,
+              "attributes": {
+                "brand": "string",
+                "model": "string",
+                "condition": "Good | Fair | Poor",
+                "features": ["string"]
+              },
+              "text": {
+                "detected": "string",
+                "confidence": 0.0
+              }
+            }
+          ],
+          "scene": {
+            "flooring_type": "string | unknown",
+            "lighting": "LED | not LED | unknown",
+            "is_partial_view": true
+          }
+        }
+
+        Rules:
+        - Include ALL visible objects, even if uncertain
+        - Use exact object types (e.g., "coffee_machine", "soda_dispenser")
+        - Set confidence between 0.0 and 1.0
+        - For unknown values, use empty string or "unknown"
+        - Do not include any text outside the JSON
         """
         
         return prompt.strip()

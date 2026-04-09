@@ -42,7 +42,7 @@ class AggregationStage(BaseStage):
         image_paths: List[Path] = None,
     ) -> Dict[str, Any]:
         """
-        Run aggregation.
+        Run aggregation with deduplication.
 
         Args:
             spot_id: Spot identifier
@@ -50,7 +50,7 @@ class AggregationStage(BaseStage):
             image_paths: Optional image paths
 
         Returns:
-            Aggregated results dictionary
+            Aggregated results dictionary with deduplicated objects
         """
         self.log_execution(spot_id, "start")
 
@@ -62,6 +62,27 @@ class AggregationStage(BaseStage):
             }
 
         try:
+            # Extract VLM analysis results
+            vlm_result = None
+            for result in stage_results:
+                if result.get("stage") == "ImageAnalysisStage" and result.get("status") == "completed":
+                    vlm_result = result
+                    break
+            
+            if not vlm_result or "analysis" not in vlm_result:
+                return {
+                    "status": "failed",
+                    "stage": self.stage_name,
+                    "error": "No VLM analysis results found",
+                }
+            
+            # Get objects from VLM analysis
+            objects = vlm_result["analysis"].get("objects", [])
+            scene = vlm_result["analysis"].get("scene", {})
+            
+            # Deduplicate objects
+            deduplicated_objects = self.deduplicate_objects(objects)
+            
             # Aggregate results
             summary = {
                 "status": "completed",
@@ -70,29 +91,16 @@ class AggregationStage(BaseStage):
                 "total_stages_completed": len([s for s in stage_results if s.get("status") == "completed"]),
                 "total_stages_failed": len([s for s in stage_results if s.get("status") == "failed"]),
                 "stages": stage_results,
+                "objects": deduplicated_objects,
+                "scene": scene,
+                "object_count": len(deduplicated_objects),
             }
-
-            # Extract key statistics
-            equipment_count = sum(
-                s.get("equipment_count", 0)
-                for s in stage_results
-                if s.get("stage") == "EquipmentStage"
-            )
-            qa_count = sum(
-                s.get("qa_count", 0)
-                for s in stage_results
-                if s.get("stage") == "QuestionStage"
-            )
-
-            summary["equipment_count"] = equipment_count
-            summary["qa_count"] = qa_count
 
             self.log_execution(
                 spot_id,
                 "completed",
                 {
-                    "equipment": equipment_count,
-                    "qa": qa_count,
+                    "objects": len(deduplicated_objects),
                 },
             )
 
@@ -105,6 +113,100 @@ class AggregationStage(BaseStage):
                 "stage": self.stage_name,
                 "error": str(e),
             }
+
+    def deduplicate_objects(self, objects: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Deduplicate objects within a spot based on object type.
+
+        Args:
+            objects: List of objects from VLM analysis
+
+        Returns:
+            Deduplicated list of objects
+        """
+        if not objects:
+            return []
+        
+        # Group by object type
+        type_groups = {}
+        for obj in objects:
+            obj_type = obj.get("type", "").strip().lower()
+            if not obj_type:
+                continue
+            
+            if obj_type not in type_groups:
+                type_groups[obj_type] = []
+            type_groups[obj_type].append(obj)
+        
+        deduplicated = []
+        
+        for obj_type, group in type_groups.items():
+            if len(group) == 1:
+                # No duplicates
+                deduplicated.append(group[0])
+            else:
+                # Merge duplicates
+                merged = self._merge_objects(group)
+                deduplicated.append(merged)
+        
+        logger.debug(f"Deduplicated {len(objects)} objects to {len(deduplicated)}")
+        return deduplicated
+
+    def _merge_objects(self, objects: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Merge multiple objects of the same type.
+
+        Args:
+            objects: List of objects with same type
+
+        Returns:
+            Single merged object
+        """
+        if not objects:
+            return {}
+        
+        # Start with the first object
+        merged = objects[0].copy()
+        
+        # Keep highest confidence
+        max_conf = max(obj.get("confidence", 0.0) for obj in objects)
+        merged["confidence"] = max_conf
+        
+        # Merge attributes conservatively
+        all_brands = set()
+        all_models = set()
+        all_features = set()
+        conditions = []
+        
+        for obj in objects:
+            attrs = obj.get("attributes", {})
+            all_brands.add(attrs.get("brand", ""))
+            all_models.add(attrs.get("model", ""))
+            features = attrs.get("features", [])
+            if isinstance(features, list):
+                all_features.update(features)
+            condition = attrs.get("condition", "")
+            if condition:
+                conditions.append(condition)
+        
+        # Choose most common or first non-empty
+        merged["attributes"]["brand"] = next((b for b in all_brands if b), "")
+        merged["attributes"]["model"] = next((m for m in all_models if m), "")
+        merged["attributes"]["features"] = list(all_features)
+        
+        # For condition, prefer "Good" if any, else most common
+        if "Good" in conditions:
+            merged["attributes"]["condition"] = "Good"
+        elif conditions:
+            merged["attributes"]["condition"] = max(set(conditions), key=conditions.count)
+        
+        # Merge text detections (keep highest confidence)
+        text_detections = [obj.get("text", {}) for obj in objects if obj.get("text")]
+        if text_detections:
+            best_text = max(text_detections, key=lambda t: t.get("confidence", 0.0))
+            merged["text"] = best_text
+        
+        return merged
 
     @staticmethod
     def get_summary_stats(aggregated_result: Dict[str, Any]) -> Dict[str, Any]:

@@ -9,7 +9,6 @@ from pathlib import Path
 
 from pipeline.stages import (
     ImageAnalysisStage,
-    EquipmentStage,
     QuestionStage,
     AggregationStage,
 )
@@ -46,10 +45,8 @@ class SpotPipeline:
 
         # Initialize stages
         self.image_analysis_stage = ImageAnalysisStage()
-        self.equipment_stage = EquipmentStage()
-        
-        self.question_stage = QuestionStage(questions=self.questions)
         self.aggregation_stage = AggregationStage()
+        self.question_stage = QuestionStage(questions=self.questions)
 
         logger.log(f"Initialized SpotPipeline for spot {spot.spot_id}")
 
@@ -80,48 +77,7 @@ class SpotPipeline:
                 "error": str(e),
             })
 
-        # Stage 2: Equipment Detection
-        try:
-            logger.log(f"Running EquipmentStage for spot {self.spot.spot_id}")
-            result = self.equipment_stage.run(
-                self.spot.spot_id,
-                self.spot.image_paths,
-            )
-            # Set site_id
-            if "equipment" in result:
-                for eq in result["equipment"]:
-                    eq["site_id"] = self.site_id
-            stage_results.append(result)
-        except Exception as e:
-            logger.error(f"EquipmentStage failed: {str(e)}", exc_info=e)
-            stage_results.append({
-                "status": "failed",
-                "stage": "EquipmentStage",
-                "error": str(e),
-            })
-
-        # Stage 3: Question Answering (if questions provided)
-        if self.questions:
-            try:
-                logger.log(f"Running QuestionStage for spot {self.spot.spot_id}")
-                result = self.question_stage.run(
-                    self.spot.spot_id,
-                    self.spot.image_paths,
-                )
-                # Set site_id
-                if "qa" in result:
-                    for qa in result["qa"]:
-                        qa["site_id"] = self.site_id
-                stage_results.append(result)
-            except Exception as e:
-                logger.error(f"QuestionStage failed: {str(e)}", exc_info=e)
-                stage_results.append({
-                    "status": "failed",
-                    "stage": "QuestionStage",
-                    "error": str(e),
-                })
-
-        # Final: Aggregation
+        # Stage 2: Aggregation (Deduplication)
         try:
             logger.log(f"Running AggregationStage for spot {self.spot.spot_id}")
             aggregated = self.aggregation_stage.run(
@@ -137,6 +93,31 @@ class SpotPipeline:
                 "stage": "AggregationStage",
                 "error": str(e),
             }
+
+        # Stage 3: Question Answering (if questions provided)
+        if self.questions and aggregated.get("status") == "completed":
+            try:
+                logger.log(f"Running QuestionStage for spot {self.spot.spot_id}")
+                result = self.question_stage.run(
+                    self.spot.spot_id,
+                    aggregated,  # Pass aggregated data instead of image_paths
+                )
+                # Set site_id
+                if "qa" in result:
+                    for qa in result["qa"]:
+                        qa["site_id"] = self.site_id
+                stage_results.append(result)
+            except Exception as e:
+                logger.error(f"QuestionStage failed: {str(e)}", exc_info=e)
+                stage_results.append({
+                    "status": "failed",
+                    "stage": "QuestionStage",
+                    "error": str(e),
+                })
+
+        # Update aggregated with final results
+        if aggregated.get("status") == "completed":
+            aggregated["stages"] = stage_results
 
         logger.log(f"Completed pipeline for spot {self.spot.spot_id}")
         return aggregated

@@ -59,9 +59,8 @@ FILES_CREATED = {
         "pipeline/stages/__init__.py",
         "pipeline/stages/base_stage.py",  # Abstract base class
         "pipeline/stages/image_analysis_stage.py",  # Stage 1
-        "pipeline/stages/equipment_stage.py",  # Stage 2
-        "pipeline/stages/question_stage.py",  # Stage 3
-        "pipeline/stages/aggregation_stage.py",  # Final aggregation
+        "pipeline/stages/question_stage.py",  # Stage 2
+        "pipeline/stages/aggregation_stage.py",  # Stage 3 - Final aggregation
     ],
     "OpenAI Integration": [
         "services/__init__.py",
@@ -113,20 +112,16 @@ ARCHITECTURE = """
     │                                          │
     │  1. ImageAnalysisStage                   │
     │     ├─→ OpenAI Vision API                │
-    │     └─→ Parse response                   │
+    │     └─→ Parse structured JSON            │
     │                                          │
-    │  2. EquipmentStage                       │
-    │     ├─→ Detect equipment                 │
-    │     ├─→ Get confidence scores            │
-    │     └─→ Save to DB                       │
+    │  2. AggregationStage                     │
+    │     ├─→ Deduplicate objects              │
+    │     └─→ Aggregate results                │
     │                                          │
     │  3. QuestionStage                        │
-    │     ├─→ Ask each question                │
-    │     ├─→ Collect answers                  │
+    │     ├─→ Answer questions deterministically│
+    │     ├─→ Use deduplicated data            │
     │     └─→ Save to DB                       │
-    │                                          │
-    │  4. AggregationStage                     │
-    │     └─→ Summarize stage results          │
     │                                          │
     └────────────┬─────────────────────────────┘
                  │

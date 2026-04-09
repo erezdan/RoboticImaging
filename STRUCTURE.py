@@ -143,11 +143,10 @@ RoboticImaging/
 │   ├── spot_pipeline.py (Single-Spot Sequential Processor)
 │   │   ├─ SpotPipeline class
 │   │   ├─ __init__(spot, site_id, questions)
-│   │   ├─ run() - Execute 4 stages in sequence:
+│   │   ├─ run() - Execute 3 stages in sequence:
 │   │   │   1. ImageAnalysisStage
-│   │   │   2. EquipmentStage
+│   │   │   2. AggregationStage (deduplication)
 │   │   │   3. QuestionStage
-│   │   │   4. AggregationStage
 │   │   └─ set_questions()
 │   │
 │   └── stages/                             ★ PIPELINE STAGES
@@ -165,20 +164,19 @@ RoboticImaging/
 │       │   ├─ ImageAnalysisStage(BaseStage)
 │       │   ├─ validate_inputs() - Check images exist
 │       │   ├─ run() - OpenAI general image analysis
-│       │   └─ Returns: analysis dict with confidence
+│       │   └─ Returns: structured JSON with objects and scene
 │       │
-│       ├── equipment_stage.py (Stage 2)
-│       │   ├─ EquipmentStage(BaseStage)
-│       │   ├─ validate_inputs()
-│       │   ├─ run() - Equipment detection
-│       │   ├─ Creates Equipment objects
-│       │   └─ Saves to DB with confidence scores
+│       ├── aggregation_stage.py (Stage 2)
+│       │   ├─ AggregationStage(BaseStage)
+│       │   ├─ run() - Deduplicate objects within spot
+│       │   ├─ merge_attributes() - Conservative merging
+│       │   └─ Returns: clean object list
 │       │
 │       ├── question_stage.py (Stage 3)
 │       │   ├─ QuestionStage(BaseStage)
 │       │   ├─ __init__(questions=[])
 │       │   ├─ validate_inputs()
-│       │   ├─ add_questions()
+│       │   ├─ answer_question() - Deterministic logic
 │       │   ├─ run() - Process each question
 │       │   ├─ Creates QuestionAnswer objects
 │       │   └─ Saves to DB
@@ -289,16 +287,16 @@ PROCESSING FLOW:
      Stage 1: ImageAnalysisStage
        ├─ Validate images
        ├─ Call OpenAI (5-10 images as group)
-       └─ Parse response
+       └─ Parse structured JSON response
      
-     Stage 2: EquipmentStage
-       ├─ Call OpenAI for equipment detection
-       ├─ Extract: equipment_type, confidence, location
-       └─ Save Equipment objects to DB
+     Stage 2: AggregationStage
+       ├─ Deduplicate objects based on type
+       ├─ Merge attributes conservatively
+       └─ Produce clean object list
      
      Stage 3: QuestionStage
-       ├─ Ask each question via OpenAI
-       ├─ Extract: answer, confidence
+       ├─ Answer questions using deduplicated data
+       ├─ Use deterministic logic (no VLM calls)
        └─ Save QuestionAnswer objects to DB
      
      Stage 4: AggregationStage
@@ -338,10 +336,9 @@ API (need advanced search):
   ★ query_engine.py::export_results() - CSV/JSON export
 
 Stage Logic (specific business logic):
-  - ImageAnalysisStage::run() - implemented as skeleton
-  - EquipmentStage::run() - implemented as skeleton
-  - QuestionStage::run() - implemented as skeleton
-  - AggregationStage::run() - basic aggregation
+  - ImageAnalysisStage::run() - OpenAI vision with structured output
+  - AggregationStage::run() - deduplication and aggregation
+  - QuestionStage::run() - deterministic question answering
 
 ALL OTHER FILES: PRODUCTION-READY
   ✓ Database layer complete

@@ -25,8 +25,32 @@ def main():
     site_id = "18799_Fort_Street"
     site_name = "18799 Fort Street"
     questions = [
+        # Equipment Counts
+        "What is the total number of coffee machines?",
+        "What is the total number of fountain dispensers?",
+        "What is the total number of slurpee machines?",
+        "What is the total number of hot food cases?",
+        "What is the total number of cold food refrigerator cases?",
+
+        # Equipment Identification
+        "What type of coffee machine is present?",
+        "Is there a roller grill present?",
+        "Are hot food cases present?",
+        "Are cold food cases present?",
+
+        # Interior Observations
+        "Does the sales floor have LED lighting?",
+        "What is the type of flooring?",
+        "Is there an ATM present?",
+        "Is there a lottery or kiosk terminal present?",
+
+        # Food Service
+        "Is there a 3-compartment sink present?",
+        "Is there a hand-wash sink present?",
+
+        # General fallback
         "What equipment is visible?",
-        "Is it in good condition?",
+        "What is the condition of the equipment?"
     ]
     
     # Set to True to query results instead of processing

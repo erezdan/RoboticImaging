@@ -44,7 +44,6 @@ RoboticImaging/
 │   └── stages/
 │       ├── base_stage.py        # Abstract stage interface
 │       ├── image_analysis_stage.py
-│       ├── equipment_stage.py
 │       ├── question_stage.py
 │       └── aggregation_stage.py
 │
@@ -168,16 +167,15 @@ Site
   │
   └─→ For Each Spot
       ├── ImageAnalysisStage
-      │   └─→ Extract visual features
+      │   └─→ Extract structured visual features
       │
-      ├── EquipmentStage
-      │   └─→ Detect and classify equipment
+      ├── AggregationStage
+      │   └─→ Deduplicate objects within spot
       │
       ├── QuestionStage
-      │   └─→ Answer predefined questions
+      │   └─→ Answer questions deterministically
       │
-      └── AggregationStage
-          └─→ Summarize and store results
+      └── Store results in database
 ```
 
 ### Stage Interface
