@@ -22,8 +22,8 @@ def main():
     """
     
     # Configuration
-    site_id = "site_001"
-    site_name = "Test Site"
+    site_id = "18799_Fort_Street"
+    site_name = "18799 Fort Street"
     questions = [
         "What equipment is visible?",
         "Is it in good condition?",

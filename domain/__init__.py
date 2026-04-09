@@ -46,6 +46,7 @@ class Spot:
     
     spot_id: str
     site_id: str
+    category_name: str
     image_paths: List[Path] = field(default_factory=list)
     metadata: dict = field(default_factory=dict)
     created_at: datetime = field(default_factory=datetime.utcnow)
@@ -55,6 +56,7 @@ class Spot:
         return {
             "spot_id": self.spot_id,
             "site_id": self.site_id,
+            "category_name": self.category_name,
             "image_count": len(self.image_paths),
             "metadata": self.metadata,
             "created_at": self.created_at.isoformat(),

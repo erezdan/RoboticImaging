@@ -4,6 +4,7 @@ Site pipeline - Orchestrates processing of multiple spots.
 Processes a site by running each spot's pipeline in parallel.
 """
 
+import re
 from typing import Dict, Any, List, Optional
 from pathlib import Path
 
@@ -75,6 +76,7 @@ class SitePipeline:
                 continue
 
             spot_id = spot_dir.name
+            spot_category = self._extract_category_from_spot_id(spot_id)
             
             # Load images for this spot
             image_paths = file_manager.load_image_paths(spot_dir)
@@ -86,6 +88,7 @@ class SitePipeline:
             spot = Spot(
                 spot_id=spot_id,
                 site_id=self.site_id,
+                category_name=spot_category,
                 image_paths=image_paths,
             )
             spots.append(spot)
@@ -95,6 +98,29 @@ class SitePipeline:
 
         logger.log(f"Discovered {len(spots)} spots in site {self.site_id}")
         return spots
+
+    def _extract_category_from_spot_id(self, spot_id: str) -> str:
+        """
+        Extracts category from spot ID.
+
+        Rules:
+        - If last part is numeric (e.g. _1, _2), remove it
+        - Replace underscores with spaces
+        """
+
+        if not spot_id:
+            return ""
+
+        parts = spot_id.split("_")
+
+        # Check if last part is numeric
+        if parts[-1].isdigit():
+            parts = parts[:-1]
+
+        # Join with space to form category
+        category = " ".join(parts)
+
+        return category
 
     def _process_spot(self, spot: Spot) -> Dict[str, Any]:
         """
