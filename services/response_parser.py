@@ -67,7 +67,7 @@ class ResponseParser:
         
         try:
             # Extract JSON from response
-            json_data = ResponseParser.extract_json(response)
+            json_data = ResponseParser.extract_json(response["response"])
             if not json_data:
                 logger.warning("No JSON found in response")
                 return {
@@ -98,8 +98,8 @@ class ResponseParser:
                     obj["text"] = {"detected": "", "confidence": 0.0}
                 if "confidence" not in obj:
                     obj["confidence"] = 0.5
-                if "category_hint" not in obj:
-                    obj["category_hint"] = ""
+                if "category_name" not in obj:
+                    obj["category_name"] = ""
             
             json_data["raw_response"] = response
             return json_data

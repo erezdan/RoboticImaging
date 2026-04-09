@@ -10,6 +10,8 @@ from pathlib import Path
 from config.settings import settings
 from utils.logger import logger
 
+import base64
+from openai import OpenAI
 
 class OpenAIService:
     """
@@ -34,6 +36,7 @@ class OpenAIService:
         if not self.api_key:
             raise ValueError("OPENAI_API_KEY not provided")
 
+        self.client = OpenAI(api_key=self.api_key)
         logger.log(f"Initialized OpenAI service with model: {self.model}")
 
     def analyze_images(
@@ -42,64 +45,88 @@ class OpenAIService:
         prompt: str,
     ) -> Dict[str, Any]:
         """
-        Analyze multiple images with a prompt.
-
-        Args:
-            image_paths: List of image file paths
-            prompt: Analysis prompt/question
-
-        Returns:
-            Dictionary with analysis results
-
-        TODO:
-            Actual implementation requires:
-            1. Image encoding (base64)
-            2. OpenAI vision API call
-            3. Response parsing
+        Analyze multiple images with OpenAI Vision.
         """
         logger.log(f"Analyzing {len(image_paths)} images with prompt")
-        
-        # TODO: Replace with actual OpenAI API call
-        result = {
-            "status": "pending",
-            "image_count": len(image_paths),
-            "prompt": prompt,
-            "response": None,
-        }
-        
-        return result
+
+        try:
+            encoded_images = self.encode_images(image_paths)
+
+            content = []
+
+            # Add prompt as text
+            content.append({
+                "type": "input_text",
+                "text": prompt
+            })
+
+            # Add images
+            for img_base64 in encoded_images:
+                content.append({
+                    "type": "input_image",
+                    "image_url": f"data:image/jpeg;base64,{img_base64}"
+                })
+
+            response = self.client.responses.create(
+                model=self.model,
+                input=[{
+                    "role": "user",
+                    "content": content
+                }],
+                timeout=self.timeout
+            )
+
+            # Extract text response safely
+            output_text = ""
+            if response.output and len(response.output) > 0:
+                for item in response.output:
+                    if hasattr(item, "content"):
+                        for c in item.content:
+                            if c.type == "output_text":
+                                output_text += c.text
+
+            result = {
+                "status": "success",
+                "image_count": len(image_paths),
+                "response": output_text,
+                "raw": response.model_dump()
+            }
+
+            return result
+
+        except Exception as e:
+            logger.error(f"OpenAI analysis failed: {str(e)}", exc_info=e)
+
+            return {
+                "status": "error",
+                "image_count": len(image_paths),
+                "response": None,
+                "error": str(e)
+            }
 
     def encode_images(self, image_paths: List[Path]) -> List[str]:
         """
         Encode images to base64 for API submission.
-
-        Args:
-            image_paths: List of image file paths
-
-        Returns:
-            List of base64-encoded images
-
-        TODO:
-            Implement base64 encoding for images.
         """
         logger.debug(f"Encoding {len(image_paths)} images")
         encoded = []
-        
-        # TODO: Implement base64 encoding
+
         for path in image_paths:
-            pass  # Encode and append
-        
+            try:
+                with open(path, "rb") as img_file:
+                    encoded_str = base64.b64encode(img_file.read()).decode("utf-8")
+                    encoded.append(encoded_str)
+            except Exception as e:
+                logger.error(f"Failed to encode image {path}: {str(e)}")
+
         return encoded
 
     def health_check(self) -> bool:
-        """
-        Check if OpenAI API is accessible.
-
-        Returns:
-            True if API is accessible
-        """
         try:
-            # TODO: Implement actual health check
+            response = self.client.responses.create(
+                model=self.model,
+                input="ping"
+            )
             logger.log("OpenAI API health check passed")
             return True
         except Exception as e:

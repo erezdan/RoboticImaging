@@ -66,6 +66,7 @@ class SpotPipeline:
             logger.log(f"Running ImageAnalysisStage for spot {self.spot.spot_id}")
             result = self.image_analysis_stage.run(
                 self.spot.spot_id,
+                self.spot.category_name,
                 self.spot.image_paths,
             )
             stage_results.append(result)

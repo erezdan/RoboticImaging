@@ -53,12 +53,13 @@ class ImageAnalysisStage(BaseStage):
 
         return True
 
-    def run(self, spot_id: str, image_paths: List[Path]) -> Dict[str, Any]:
+    def run(self, spot_id: str, category_name: str, image_paths: List[Path]) -> Dict[str, Any]:
         """
         Run image analysis.
 
         Args:
             spot_id: Spot identifier
+            category_name: Name of the category (for context)
             image_paths: List of image paths
 
         Returns:
@@ -77,7 +78,8 @@ class ImageAnalysisStage(BaseStage):
             # Build analysis prompt
             prompt = prompt_builder.build_general_prompt(
                 "Analyze these images comprehensively",
-                {"spot_id": spot_id},
+                {"spot_id": spot_id,
+                 "category_name": category_name},
             )
 
             # Call OpenAI

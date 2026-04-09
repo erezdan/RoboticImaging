@@ -83,56 +83,95 @@ class PromptBuilder:
 
     @staticmethod
     def build_general_prompt(task: str, context: Dict[str, Any]) -> str:
-        """
-        Build general analysis prompt.
-
-        Args:
-            task: Analysis task description
-            context: Analysis context
-
-        Returns:
-            Formatted prompt string
-        """
         logger.debug(f"Building general prompt: {task}")
-        
-        prompt = """
-        Analyze the provided images and extract all visible objects and scene information.
 
-        Return ONLY a valid JSON object with the following structure:
+        category_name = context.get("category_name", "unknown")
 
-        {
-          "objects": [
-            {
-              "type": "string",
-              "category_hint": "string",
-              "confidence": 0.0,
-              "attributes": {
-                "brand": "string",
-                "model": "string",
-                "condition": "Good | Fair | Poor",
-                "features": ["string"]
-              },
-              "text": {
-                "detected": "string",
-                "confidence": 0.0
-              }
-            }
-          ],
-          "scene": {
-            "flooring_type": "string | unknown",
-            "lighting": "LED | not LED | unknown",
-            "is_partial_view": true
-          }
-        }
+        prompt = f"""
+            Analyze the provided images of the SAME physical location (multiple angles of the same spot).
 
-        Rules:
-        - Include ALL visible objects, even if uncertain
-        - Use exact object types (e.g., "coffee_machine", "soda_dispenser")
-        - Set confidence between 0.0 and 1.0
-        - For unknown values, use empty string or "unknown"
-        - Do not include any text outside the JSON
+            The category of this spot is: {category_name}
+
+            Your goal is to identify UNIQUE physical objects and extract structured information.
+
+            Return ONLY a valid JSON object with the following structure:
+
+            {{
+            "objects": [
+                {{
+                "type": "string",
+                "category_name": "{category_name}",
+                "confidence": 0.0,
+                "attributes": {{
+                    "brand": "string",
+                    "model": "string",
+                    "condition": "Good | Fair | Poor",
+                    "features": ["string"]
+                }},
+                "text": {{
+                    "detected": "string",
+                    "confidence": 0.0
+                }}
+                }}
+            ],
+            "scene": {{
+                "flooring_type": "string | unknown",
+                "lighting": "LED | not LED | unknown",
+                "is_partial_view": true
+            }}
+            }}
+
+            CRITICAL RULES:
+
+            1. UNIQUE OBJECTS ONLY
+            - The images show the SAME area from multiple angles
+            - The same object may appear in multiple images
+            - DO NOT duplicate objects
+            - Each physical object must appear ONLY ONCE in the output
+
+            2. MERGE ACROSS IMAGES
+            - Combine information from all images
+            - If an object appears in multiple images:
+            - merge its attributes
+            - increase confidence if consistent
+
+            3. USE CATEGORY HINT
+            - Use "{category_name}" as context to improve classification
+            - Prefer object types relevant to this category
+
+            4. OBJECT DETECTION
+            - Include all visible equipment and machines
+            - Use consistent naming:
+            - "coffee_machine"
+            - "fountain_dispenser"
+            - "refrigerator"
+            - "hot_food_case"
+            - Avoid synonyms for the same object
+
+            5. CONDITION ESTIMATION
+            - Good: clean, intact, well-maintained
+            - Fair: minor wear, some visible issues
+            - Poor: damaged, dirty, or broken
+
+            6. TEXT EXTRACTION
+            - Extract visible labels, brands, or model numbers
+            - If unclear, leave empty or "unknown"
+
+            7. SCENE ANALYSIS
+            - flooring_type: infer from visible floor material
+            - lighting: LED if modern bright uniform lighting, otherwise not LED or unknown
+            - is_partial_view: true if the full area is not visible
+
+            8. UNCERTAINTY
+            - If unsure, lower confidence
+            - If not visible, use "unknown"
+
+            9. OUTPUT FORMAT
+            - Return ONLY valid JSON
+            - No explanations
+            - No extra text
+
         """
-        
         return prompt.strip()
 
     @staticmethod
