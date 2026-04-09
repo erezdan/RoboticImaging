@@ -56,6 +56,9 @@ def main():
     # Set to True to query results instead of processing
     RUN_QUERY = False
     
+    # DEBUG MODE: Set to True to process only first spot (useful for debugging)
+    DEBUG_SINGLE_SPOT = False
+    
     try:
         # Validate environment
         settings.validate()
@@ -78,6 +81,7 @@ def main():
                 site_id=site_id,
                 site_name=site_name,
                 questions=questions,
+                debug_single_spot=DEBUG_SINGLE_SPOT,
             )
             
             results = pipeline.run()

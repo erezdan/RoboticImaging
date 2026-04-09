@@ -19,16 +19,18 @@ class ConcurrencyManager:
     Wraps ProcessPoolExecutor for CPU-bound tasks.
     """
 
-    def __init__(self, max_workers: int = 4, executor_type: str = "thread"):
+    def __init__(self, max_workers: int = 4, executor_type: str = "thread", debug_single_item: bool = False):
         """
         Initialize concurrency manager.
 
         Args:
             max_workers: Maximum number of workers
             executor_type: "thread" or "process"
+            debug_single_item: If True, process only first item (for debugging)
         """
         self.max_workers = max_workers
         self.executor_type = executor_type
+        self.debug_single_item = debug_single_item
         self._executor: Optional[Executor] = None
 
     @contextmanager
@@ -68,6 +70,19 @@ class ConcurrencyManager:
         Returns:
             List of results in same order as items
         """
+        # Debug mode: process only first item
+        if self.debug_single_item:
+            logger.warning(f"🐛 DEBUG MODE: Processing only first item out of {len(items)} total")
+            if not items:
+                return []
+            try:
+                result = func(items[0])
+                logger.log(f"✓ Debug processing complete for 1 item")
+                return [result]
+            except Exception as e:
+                logger.error(f"Debug task failed: {str(e)}", exc_info=e)
+                return [None]
+        
         logger.debug(f"Executing {len(items)} items in parallel ({self.executor_type})")
         
         with self.get_executor() as executor:
@@ -85,11 +100,23 @@ class ConcurrencyManager:
         return results
 
 
-def create_thread_pool(max_workers: int = 4) -> ConcurrencyManager:
-    """Create thread pool executor manager."""
-    return ConcurrencyManager(max_workers=max_workers, executor_type="thread")
+def create_thread_pool(max_workers: int = 4, debug_single_item: bool = False) -> ConcurrencyManager:
+    """
+    Create thread pool executor manager.
+    
+    Args:
+        max_workers: Maximum number of worker threads
+        debug_single_item: If True, process only first item (for debugging)
+    """
+    return ConcurrencyManager(max_workers=max_workers, executor_type="thread", debug_single_item=debug_single_item)
 
 
-def create_process_pool(max_workers: int = 4) -> ConcurrencyManager:
-    """Create process pool executor manager."""
-    return ConcurrencyManager(max_workers=max_workers, executor_type="process")
+def create_process_pool(max_workers: int = 4, debug_single_item: bool = False) -> ConcurrencyManager:
+    """
+    Create process pool executor manager.
+    
+    Args:
+        max_workers: Maximum number of worker processes
+        debug_single_item: If True, process only first item (for debugging)
+    """
+    return ConcurrencyManager(max_workers=max_workers, executor_type="process", debug_single_item=debug_single_item)

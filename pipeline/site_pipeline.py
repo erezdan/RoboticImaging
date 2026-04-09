@@ -29,6 +29,7 @@ class SitePipeline:
         site_id: str,
         site_name: str = None,
         questions: List[str] = None,
+        debug_single_spot: bool = False,
     ):
         """
         Initialize site pipeline.
@@ -37,16 +38,18 @@ class SitePipeline:
             site_id: Unique site identifier
             site_name: Optional human-readable site name
             questions: Optional list of questions for all spots
+            debug_single_spot: If True, process only first spot (for debugging)
         """
         self.site_id = site_id
         self.site_name = site_name or site_id
         self.questions = questions or []
+        self.debug_single_spot = debug_single_spot
         
         self.site_repo = get_site_repository()
         self.spot_repo = get_spot_repository()
         
         # Create thread pool for parallel spot processing
-        self.executor = create_thread_pool(max_workers=settings.NUM_WORKERS)
+        self.executor = create_thread_pool(max_workers=settings.NUM_WORKERS, debug_single_item=debug_single_spot)
 
         logger.log(f"Initialized SitePipeline for site {self.site_id}")
 
