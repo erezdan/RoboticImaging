@@ -1,14 +1,7 @@
 import os
-from PIL import Image
+from PIL import Image, ImageOps
 
 def optimize_images_in_directory(base_path, max_size=1280, quality=100):
-    """
-    Recursively processes all images in a directory:
-    - Converts to JPG
-    - Resizes to max_size
-    - Compresses with given quality
-    """
-
     supported_extensions = (".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tiff")
 
     for root, dirs, files in os.walk(base_path):
@@ -21,21 +14,24 @@ def optimize_images_in_directory(base_path, max_size=1280, quality=100):
             try:
                 img = Image.open(input_path)
 
+                # ✅ Fix orientation using EXIF
+                img = ImageOps.exif_transpose(img)
+
                 # Convert to RGB (required for JPG)
                 if img.mode != "RGB":
                     img = img.convert("RGB")
 
-                # Resize (keeping aspect ratio)
+                # Resize
                 img.thumbnail((max_size, max_size))
 
-                # Build output path (force .jpg)
+                # Output path (force jpg)
                 output_filename = os.path.splitext(file)[0] + ".jpg"
                 output_path = os.path.join(root, output_filename)
 
-                # Save optimized image
+                # Save
                 img.save(output_path, "JPEG", quality=quality, optimize=True)
 
-                # Remove original file if different extension
+                # Remove original if needed
                 if input_path != output_path:
                     os.remove(input_path)
 
