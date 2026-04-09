@@ -35,8 +35,8 @@ class PromptBuilder:
         Returns:
             Formatted prompt string
 
-        Note:
-            Skeleton - customize based on your requirements.
+        TODO:
+            Customize based on your requirements.
         """
         logger.debug("Building equipment detection prompt")
         

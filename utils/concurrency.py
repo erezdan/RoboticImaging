@@ -76,7 +76,7 @@ class ConcurrencyManager:
             if not items:
                 return []
             try:
-                result = func(items[0])
+                result = func(items[1])
                 logger.log(f"✓ Debug processing complete for 1 item")
                 return [result]
             except Exception as e:

@@ -51,15 +51,15 @@ class OpenAIService:
         Returns:
             Dictionary with analysis results
 
-        Note:
-            This is a skeleton. Actual implementation requires:
+        TODO:
+            Actual implementation requires:
             1. Image encoding (base64)
             2. OpenAI vision API call
             3. Response parsing
         """
         logger.log(f"Analyzing {len(image_paths)} images with prompt")
         
-        # SKELETON: Replace with actual OpenAI API call
+        # TODO: Replace with actual OpenAI API call
         result = {
             "status": "pending",
             "image_count": len(image_paths),
@@ -79,13 +79,13 @@ class OpenAIService:
         Returns:
             List of base64-encoded images
 
-        Note:
-            Skeleton implementation.
+        TODO:
+            Implement base64 encoding for images.
         """
         logger.debug(f"Encoding {len(image_paths)} images")
         encoded = []
         
-        # SKELETON: Implement base64 encoding
+        # TODO: Implement base64 encoding
         for path in image_paths:
             pass  # Encode and append
         
@@ -99,7 +99,7 @@ class OpenAIService:
             True if API is accessible
         """
         try:
-            # SKELETON: Implement actual health check
+            # TODO: Implement actual health check
             logger.log("OpenAI API health check passed")
             return True
         except Exception as e:

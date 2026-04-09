@@ -57,7 +57,7 @@ def main():
     RUN_QUERY = False
     
     # DEBUG MODE: Set to True to process only first spot (useful for debugging)
-    DEBUG_SINGLE_SPOT = False
+    DEBUG_SINGLE_SPOT = True
     
     try:
         # Validate environment

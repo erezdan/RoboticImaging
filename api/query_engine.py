@@ -33,10 +33,10 @@ class QueryEngine:
             site_id: Site ID
 
         Returns:
-            Query results (skeleton)
+            Query results
 
-        Note:
-            This is a skeleton that would be enhanced with:
+        TODO:
+            Enhance with:
             - Natural language processing
             - Vector search on QA results
             - Semantic matching
@@ -97,7 +97,7 @@ class QueryEngine:
         """
         logger.log(f"Searching for {equipment_type} in site {site_id}")
         
-        # SKELETON: Implement actual search
+        # TODO: Implement actual search
         # Would query all spots and collect matching equipment
         
         return []
@@ -114,7 +114,7 @@ class QueryEngine:
         """
         logger.log(f"Fetching all equipment for site {site_id}")
         
-        # SKELETON: Implement equipment aggregation
+        # TODO: Implement equipment aggregation
         # Would group equipment by type
         
         return {}
@@ -132,7 +132,7 @@ class QueryEngine:
         """
         logger.log(f"Exporting results for site {site_id} as {format}")
         
-        # SKELETON: Implement export functionality
+        # TODO: Implement export functionality
         
         return {
             "status": "pending",

@@ -28,13 +28,13 @@ class ResponseParser:
         Returns:
             Structured equipment data
 
-        Note:
-            Skeleton - implement JSON/text extraction logic.
+        TODO:
+            Implement JSON/text extraction logic.
         """
         logger.debug("Parsing equipment response")
         
         try:
-            # SKELETON: Implement response parsing
+            # TODO: Implement response parsing
             # Expected structure:
             # {
             #   "equipment": [
