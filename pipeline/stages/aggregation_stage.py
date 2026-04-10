@@ -251,7 +251,7 @@ class AggregationStage(BaseStage):
         return {
             "spot_id": aggregated_result.get("spot_id"),
             "status": aggregated_result.get("status"),
-            "equipment_count": aggregated_result.get("equipment_count", 0),
+            "object_count": aggregated_result.get("object_count", 0),
             "qa_count": aggregated_result.get("qa_count", 0),
             "total_stages_completed": aggregated_result.get("total_stages_completed", 0),
             "total_stages_failed": aggregated_result.get("total_stages_failed", 0),

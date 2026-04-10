@@ -9,7 +9,7 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime
 from dataclasses import dataclass, field
 
-from domain import Site, Spot, Equipment, QuestionAnswer, SpotAnalysisModel, ObjectModel, SceneModel, VisibilityModel
+from domain import Site, Spot, QuestionAnswer, SpotAnalysisModel, ObjectModel, SceneModel, VisibilityModel
 
 
 @dataclass
@@ -263,25 +263,6 @@ class SpotModel:
         )
 
         return spot
-
-
-class EquipmentModel:
-    """Model for Equipment table."""
-
-    @staticmethod
-    def from_dict(row: Dict[str, Any]) -> Equipment:
-        """Convert database row to Equipment domain object."""
-        metadata = json.loads(row.get("metadata", "{}")) if row.get("metadata") else {}
-        return Equipment(
-            equipment_id=row["equipment_id"],
-            spot_id=row["spot_id"],
-            site_id=row["site_id"],
-            equipment_type=row["equipment_type"],
-            confidence=row["confidence"],
-            location=row.get("location"),
-            metadata=metadata,
-            created_at=datetime.fromisoformat(row["created_at"]),
-        )
 
 
 class QuestionAnswerModel:

@@ -24,41 +24,6 @@ class ResponseParser:
     """
 
     @staticmethod
-    def parse_equipment_response(response: str) -> Dict[str, Any]:
-        """
-        Parse equipment detection response.
-
-        Args:
-            response: Raw API response
-
-        Returns:
-            Structured equipment data
-
-        TODO:
-            Implement JSON/text extraction logic.
-        """
-        logger.debug("Parsing equipment response")
-
-        try:
-            # TODO: Implement response parsing
-            # Expected structure:
-            # {
-            #   "equipment": [
-            #     {"type": "...", "location": "...", "confidence": 0.95}
-            #   ]
-            # }
-
-            parsed = {
-                "equipment": [],
-                "raw_response": response,
-            }
-
-            return parsed
-        except Exception as e:
-            logger.error(f"Failed to parse equipment response: {str(e)}", exc_info=e)
-            return {"error": str(e), "raw_response": response}
-
-    @staticmethod
     def parse_question_response(response: str) -> SpotAnalysisModel:
         """
         Parse structured VLM response into new rich schema models.

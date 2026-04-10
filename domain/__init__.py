@@ -1,7 +1,7 @@
 """
 Domain models for the Computer Vision pipeline.
 
-Represents core business entities: Site, Spot, Equipment, Question.
+Represents core business entities: Site, Spot, and QuestionAnswer.
 Enhanced with new VLM schema models.
 """
 
@@ -186,12 +186,6 @@ class SpotAnalysisModel:
             "scene": self.scene.to_dict(),
         }
 
-from dataclasses import dataclass, field
-from typing import Optional, List
-from datetime import datetime
-from pathlib import Path
-
-
 @dataclass
 class Site:
     """
@@ -265,37 +259,6 @@ class Spot:
     def get_scene_info(self) -> SceneModel:
         """Get scene information from VLM analysis."""
         return self.vlm_analysis.scene
-
-
-@dataclass
-class Equipment:
-    """
-    Represents equipment detected/analyzed in a spot.
-    
-    Result of equipment analysis stage.
-    """
-    
-    equipment_id: str
-    spot_id: str
-    site_id: str
-    equipment_type: str
-    confidence: float
-    location: Optional[str] = None
-    metadata: dict = field(default_factory=dict)
-    created_at: datetime = field(default_factory=datetime.utcnow)
-    
-    def to_dict(self) -> dict:
-        """Convert to dictionary."""
-        return {
-            "equipment_id": self.equipment_id,
-            "spot_id": self.spot_id,
-            "site_id": self.site_id,
-            "equipment_type": self.equipment_type,
-            "confidence": self.confidence,
-            "location": self.location,
-            "metadata": self.metadata,
-            "created_at": self.created_at.isoformat(),
-        }
 
 
 @dataclass

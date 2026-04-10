@@ -10,8 +10,8 @@ from typing import Optional, List
 from datetime import datetime
 
 from db.database import db
-from db.models import SiteModel, SpotModel, EquipmentModel, QuestionAnswerModel
-from domain import Site, Spot, Equipment, QuestionAnswer
+from db.models import SiteModel, SpotModel, QuestionAnswerModel
+from domain import Site, Spot, QuestionAnswer
 from utils.logger import logger
 
 
@@ -404,81 +404,6 @@ class SpotRepository:
         return [SpotModel.from_dict(row) for row in rows]
 
 
-class EquipmentRepository:
-    """Repository for Equipment operations."""
-
-    @staticmethod
-    def save_equipment(equipment: Equipment) -> bool:
-        """
-        Save equipment.
-
-        Args:
-            equipment: Equipment domain object
-
-        Returns:
-            True if successful
-        """
-        try:
-            query = """
-                INSERT OR REPLACE INTO equipment 
-                (equipment_id, spot_id, site_id, equipment_type, confidence, 
-                 location, metadata, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """
-            db.execute(
-                query,
-                (
-                    equipment.equipment_id,
-                    equipment.spot_id,
-                    equipment.site_id,
-                    equipment.equipment_type,
-                    equipment.confidence,
-                    equipment.location,
-                    json.dumps(equipment.metadata),
-                    equipment.created_at.isoformat(),
-                ),
-            )
-            logger.debug(f"Saved equipment: {equipment.equipment_id}")
-            return True
-        except Exception as e:
-            logger.error(f"Failed to save equipment: {str(e)}", exc_info=e)
-            return False
-
-    @staticmethod
-    def get_equipment_by_spot(spot_id: str) -> List[Equipment]:
-        """
-        Get all equipment in a spot.
-
-        Args:
-            spot_id: Spot ID
-
-        Returns:
-            List of Equipment objects
-        """
-        rows = db.fetch_all(
-            "SELECT * FROM equipment WHERE spot_id = ? ORDER BY created_at DESC",
-            (spot_id,),
-        )
-        return [EquipmentModel.from_dict(row) for row in rows]
-
-    @staticmethod
-    def get_equipment_by_site(site_id: str) -> List[Equipment]:
-        """
-        Get all equipment in a site.
-
-        Args:
-            site_id: Site ID
-
-        Returns:
-            List of Equipment objects
-        """
-        rows = db.fetch_all(
-            "SELECT * FROM equipment WHERE site_id = ? ORDER BY created_at DESC",
-            (site_id,),
-        )
-        return [EquipmentModel.from_dict(row) for row in rows]
-
-
 class QuestionAnswerRepository:
     """Repository for QuestionAnswer operations."""
 
@@ -563,11 +488,6 @@ def get_site_repository() -> SiteRepository:
 def get_spot_repository() -> SpotRepository:
     """Get SpotRepository instance."""
     return SpotRepository()
-
-
-def get_equipment_repository() -> EquipmentRepository:
-    """Get EquipmentRepository instance."""
-    return EquipmentRepository()
 
 
 def get_question_answer_repository() -> QuestionAnswerRepository:

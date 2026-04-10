@@ -4,7 +4,7 @@ Query engine - API for querying results.
 Provides a simple interface to ask questions and retrieve results.
 """
 
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any
 
 from queries.site_queries import SiteQueries
 from queries.spot_queries import SpotQueries
@@ -15,7 +15,7 @@ class QueryEngine:
     """
     Query engine for accessing processed results.
     
-    Exposes methods to query sites, spots, equipment, and Q&A results.
+    Exposes methods to query sites, spots, objects, and Q&A results.
     """
 
     def __init__(self):
@@ -70,54 +70,19 @@ class QueryEngine:
         
         # Get spot info
         spot_summary = self.spot_queries.get_spot_summary(spot_id)
-        equipment = self.spot_queries.get_equipment(spot_id)
+        detected_objects = self.spot_queries.get_vlm_objects(spot_id)
         qa_results = self.spot_queries.get_questions(spot_id)
         
         result = {
             "question": question,
             "spot_id": spot_id,
             "spot_summary": spot_summary,
-            "equipment": equipment,
+            "objects": detected_objects,
             "qa_results": qa_results,
             "status": "completed",
         }
         
         return result
-
-    def search_equipment(self, site_id: str, equipment_type: str) -> List[Dict[str, Any]]:
-        """
-        Search for equipment by type in a site.
-
-        Args:
-            site_id: Site ID
-            equipment_type: Type of equipment to search for
-
-        Returns:
-            List of matching equipment
-        """
-        logger.log(f"Searching for {equipment_type} in site {site_id}")
-        
-        # TODO: Implement actual search
-        # Would query all spots and collect matching equipment
-        
-        return []
-
-    def get_all_equipment(self, site_id: str) -> Dict[str, List[Dict[str, Any]]]:
-        """
-        Get all equipment detected in a site grouped by type.
-
-        Args:
-            site_id: Site ID
-
-        Returns:
-            Dictionary mapping equipment types to equipment lists
-        """
-        logger.log(f"Fetching all equipment for site {site_id}")
-        
-        # TODO: Implement equipment aggregation
-        # Would group equipment by type
-        
-        return {}
 
     def export_results(self, site_id: str, format: str = "json") -> Dict[str, Any]:
         """

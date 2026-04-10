@@ -6,11 +6,9 @@ Provides functions to query processed data for a site.
 
 from typing import List, Dict, Any
 
-from domain import Site, Spot, Equipment, QuestionAnswer
 from db.repositories import (
     get_site_repository,
     get_spot_repository,
-    get_equipment_repository,
     get_question_answer_repository,
 )
 from utils.logger import logger
@@ -63,20 +61,21 @@ class SiteQueries:
             return None
 
         spot_repo = get_spot_repository()
-        equipment_repo = get_equipment_repository()
         qa_repo = get_question_answer_repository()
 
-        spots = spot_repo.list_spots_by_site(site_id)
-        equipment_list = equipment_repo.get_equipment_by_site(site_id)
+        spots = spot_repo.get_spots_by_site(site_id)
         qa_list = qa_repo.get_questions_by_site(site_id)
+        all_objects = []
+        for spot in spots:
+            all_objects.extend(spot.get_vlm_objects())
 
         return {
             "site_id": site_id,
             "site_name": site.name,
             "total_spots": len(spots),
-            "total_equipment": len(equipment_list),
+            "total_objects": len(all_objects),
             "total_questions": len(qa_list),
-            "equipment_types": list(set(eq.equipment_type for eq in equipment_list)),
+            "object_types": sorted({obj.type for obj in all_objects if obj.type and obj.type != "unknown"}),
         }
 
     def get_site_questions(self, site_id: str) -> List[Dict[str, Any]]:

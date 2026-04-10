@@ -6,10 +6,8 @@ Provides functions to query processed data for a spot.
 
 from typing import List, Dict, Any
 
-from domain import Spot, Equipment, QuestionAnswer
 from db.repositories import (
     get_spot_repository,
-    get_equipment_repository,
     get_question_answer_repository,
 )
 from utils.logger import logger
@@ -34,23 +32,6 @@ class SpotQueries:
         """
         spot = self.spot_repo.get_spot(spot_id)
         return spot.to_dict() if spot else None
-
-    def get_equipment(self, spot_id: str) -> List[Dict[str, Any]]:
-        """
-        Get all equipment detected in a spot.
-
-        Args:
-            spot_id: Spot ID
-
-        Returns:
-            List of equipment dictionaries
-        """
-        logger.log(f"Querying equipment for spot {spot_id}")
-        
-        equipment_repo = get_equipment_repository()
-        equipment_list = equipment_repo.get_equipment_by_spot(spot_id)
-        
-        return [eq.to_dict() for eq in equipment_list]
 
     def get_questions(self, spot_id: str) -> List[Dict[str, Any]]:
         """
@@ -85,16 +66,14 @@ class SpotQueries:
         if not spot:
             return None
 
-        equipment_repo = get_equipment_repository()
         qa_repo = get_question_answer_repository()
-
-        equipment_list = equipment_repo.get_equipment_by_spot(spot_id)
+        objects = spot.get_vlm_objects()
         qa_list = qa_repo.get_questions_by_spot(spot_id)
 
         # Get average confidence
-        avg_equipment_confidence = (
-            sum(eq.confidence for eq in equipment_list) / len(equipment_list)
-            if equipment_list
+        avg_object_confidence = (
+            sum(obj.confidence for obj in objects) / len(objects)
+            if objects
             else None
         )
 
@@ -107,33 +86,11 @@ class SpotQueries:
         return {
             "spot_id": spot_id,
             "site_id": spot.site_id,
-            "equipment_count": len(equipment_list),
+            "object_count": len(objects),
             "qa_count": len(qa_list),
-            "avg_equipment_confidence": avg_equipment_confidence,
+            "avg_object_confidence": avg_object_confidence,
             "avg_qa_confidence": avg_qa_confidence,
         }
-
-    def get_equipment_by_type(self, spot_id: str, equipment_type: str) -> List[Dict[str, Any]]:
-        """
-        Get equipment of specific type in a spot.
-
-        Args:
-            spot_id: Spot ID
-            equipment_type: Type of equipment to filter by
-
-        Returns:
-            List of matching equipment dictionaries
-        """
-        equipment_repo = get_equipment_repository()
-        equipment_list = equipment_repo.get_equipment_by_spot(spot_id)
-        
-        filtered = [
-            eq.to_dict()
-            for eq in equipment_list
-            if eq.equipment_type.lower() == equipment_type.lower()
-        ]
-        
-        return filtered
 
     def get_vlm_analysis(self, spot_id: str) -> Dict[str, Any]:
         """

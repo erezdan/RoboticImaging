@@ -1,58 +1,20 @@
 """
 Prompt builder for structuring analysis requests.
 
-Constructs well-formed prompts for different analysis types.
+Constructs well-formed prompts for image analysis and question answering.
 """
 
-from typing import Dict, Any, List
-from enum import Enum
+from typing import Dict, Any
 
 from utils.logger import logger
-
-
-class AnalysisType(Enum):
-    """Types of analysis available."""
-    EQUIPMENT = "equipment"
-    QUESTION = "question"
-    GENERAL = "general"
 
 
 class PromptBuilder:
     """
     Builds structured prompts for image analysis.
     
-    Provides templates and validation for different analysis types.
+    Provides templates and validation for the active analysis flow.
     """
-
-    @staticmethod
-    def build_equipment_prompt(context: Dict[str, Any]) -> str:
-        """
-        Build prompt for equipment detection.
-
-        Args:
-            context: Analysis context (site, spot, etc.)
-
-        Returns:
-            Formatted prompt string
-
-        TODO:
-            Customize based on your requirements.
-        """
-        logger.debug("Building equipment detection prompt")
-        
-        prompt = """
-        Analyze the provided images and identify all equipment visible.
-        
-        For each piece of equipment, provide:
-        - Equipment type
-        - Location/position in images
-        - Condition (if observable)
-        - Confidence level (0-100)
-        
-        Return structured data.
-        """
-        
-        return prompt.strip()
 
     @staticmethod
     def build_question_prompt(question: str, context: Dict[str, Any]) -> str:
