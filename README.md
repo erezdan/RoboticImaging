@@ -1,108 +1,139 @@
 # RoboticImaging
 
-RoboticImaging is a spot-level image analysis pipeline built around OpenAI vision models. Each spot is analyzed as a group of images, persisted to SQLite, and exposed through a small query layer.
+RoboticImaging is a spot-level image analysis pipeline that processes site imagery, persists structured results to SQLite, answers predefined site questions, and writes a final category report at the end of a site run.
 
-## Overview
+## Setup
 
-- Sites contain multiple spots.
-- Spots are the unit of processing.
-- Each spot produces structured scene data, structured object detections, and question-answer results.
-- Site-level summaries are derived from persisted spot analysis, not from a separate equipment table.
+### Requirements
 
-## Current Data Model
+- Python 3.8+
+- An OpenAI API key
 
-The project stores analysis in these core tables:
+### Install
 
-- `sites`: site metadata
-- `spots`: spot metadata and persisted QA payloads
-- `spot_analysis`: scene-level analysis for each spot
-- `spot_objects`: structured detected objects for each spot
-- `question_answers`: spot-level and site-level answers
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+```
 
-The legacy `equipment` table has been removed. Object detections now live in `spot_objects`, and query summaries are derived from `vlm_analysis` / `spot_objects`.
+### Environment
 
-## Processing Flow
+Set the required environment variable:
+
+```powershell
+$env:OPENAI_API_KEY="sk-..."
+```
+
+Optional settings come from [config/settings.py](/c:/DEV/RoboticImaging/config/settings.py):
+
+- `DATABASE_URL`
+- `NUM_WORKERS`
+- `OPENAI_MODEL`
+- `OPENAI_TIMEOUT`
+- `LOG_LEVEL`
+
+By default the project uses:
+
+- SQLite database: `db/roboimaging.db`
+- Input sites folder: `data/sites/`
+- Log file: `logs/roboimaging.log`
+
+### Input Layout
+
+Place site data under:
 
 ```text
-SitePipeline
-  -> discover spots
-  -> run SpotPipeline in parallel per spot
-
-SpotPipeline
-  -> ImageAnalysisStage
-  -> AggregationStage
-  -> persist Spot + spot_analysis + spot_objects
-
-Site question flow
-  -> SiteQuestionStage
-  -> aggregate persisted spot analysis
-  -> persist site-level question_answers
+data/sites/{site_id}/spots/{spot_id}/*.jpg
 ```
 
-## Query Flow
+The pipeline derives each spot `category_name` from the spot folder name and stores it in the `spots` table.
 
-- `SiteQueries.get_site_summary(site_id)` returns counts and object types derived from persisted spot analysis.
-- `SpotQueries.get_spot_summary(spot_id)` returns object and QA summary data for one spot.
-- `SpotQueries.get_vlm_objects(spot_id)` returns the detected objects for a spot.
-- `QueryEngine.ask_spot(question, spot_id)` returns spot summary, detected objects, and QA results.
+## Architecture
 
-## Example Usage
+### Main Flow
 
-### Process a site
-
-```python
-from pipeline.site_pipeline import SitePipeline
-
-pipeline = SitePipeline(
-    site_id="site_001",
-    site_name="Main Location",
-    questions=[
-        "What equipment is visible?",
-        "What is the condition of the equipment?",
-    ],
-)
-
-results = pipeline.run()
+```text
+main.py
+  -> SitePipeline
+     -> discover spots from data/sites/{site_id}/spots/
+     -> process spots in parallel with SpotPipeline
+     -> persist site, spots, scene analysis, objects, and Q&A
+     -> run SiteQuestionStage for site-level answers
+     -> generate final category report
 ```
 
-### Query processed results
+### Spot Processing
 
-```python
-from api import query_engine
+Each spot goes through:
 
-spot_result = query_engine.ask_spot("What equipment is visible?", "spot_123")
-objects = spot_result["objects"]
+1. `ImageAnalysisStage`
+2. `AggregationStage`
+3. Persistence through `SpotRepository.save_spot()`
 
-site_result = query_engine.ask_site("What equipment was found?", "site_001")
-summary = site_result["site_summary"]
+The persisted database tables used by the current architecture are:
+
+- `sites`
+- `spots`
+- `spot_analysis`
+- `spot_objects`
+- `question_answers`
+
+### Final Category Report
+
+At the end of a site run, `SitePipeline` generates a final report for a hard-coded category name.
+
+Current default:
+
+- `COFFEE MACHINE`
+
+The report includes:
+
+- Equipment inventory for matching spots, with detected items, locations, conditions, and confidence scores
+- Site Attribute answers for the site-level questions the system was able to answer
+
+The report is saved under:
+
+```text
+outputs/final_category_reports/
 ```
 
-### Repository access
+## How To Run
 
-```python
-from db.repositories import get_spot_repository, get_question_answer_repository
+This project currently runs from the hard-coded configuration in [main.py](/c:/DEV/RoboticImaging/main.py).
 
-spot_repo = get_spot_repository()
-qa_repo = get_question_answer_repository()
+### 1. Edit Runtime Values
 
-spot = spot_repo.get_spot("spot_123")
-objects = spot.get_vlm_objects() if spot else []
-qa_pairs = qa_repo.get_questions_by_spot("spot_123")
+Update these values in [main.py](/c:/DEV/RoboticImaging/main.py):
+
+- `site_id`
+- `site_name`
+- `questions`
+- `RUN_QUERY`
+- `DEBUG_SINGLE_SPOT`
+
+### 2. Run Processing
+
+```bash
+python main.py
 ```
 
-### Direct SQL
+With the current default `RUN_QUERY = False`, this will:
 
-```python
-from db import db
+- validate settings
+- process the configured site
+- save results to SQLite
+- run site-level questions
+- save the final category report JSON
 
-camera_rows = db.fetch_all(
-    "SELECT * FROM spot_objects WHERE type = ?",
-    ("camera",),
-)
-```
+### 3. Check Outputs
 
-## Important Notes
+After a successful run, look at:
 
-- The project no longer maintains duplicated equipment rows.
-- Object counts and object types are derived from persisted spot analysis.
-- Equipment-related user questions are still supported, but they are answered from object detections rather than a dedicated `equipment` table.
+- database: `db/roboimaging.db`
+- logs: `logs/roboimaging.log`
+- final category report: `outputs/final_category_reports/{site_id}_coffee_machine_report.json`
+
+### 4. Run Query Mode
+
+If you set `RUN_QUERY = True` in [main.py](/c:/DEV/RoboticImaging/main.py), the script will query existing processed results instead of running the pipeline.
