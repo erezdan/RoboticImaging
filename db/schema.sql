@@ -26,6 +26,65 @@ CREATE TABLE IF NOT EXISTS spots (
 
 CREATE INDEX IF NOT EXISTS idx_spots_site_id ON spots(site_id);
 
+-- New table for structured spot analysis
+CREATE TABLE IF NOT EXISTS spot_analysis (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    spot_id TEXT NOT NULL UNIQUE,
+    flooring_type TEXT DEFAULT 'unknown',
+    lighting TEXT DEFAULT 'unknown',
+    environment_type TEXT DEFAULT 'unknown',
+    is_partial_view BOOLEAN DEFAULT 0,
+    occlusions_present BOOLEAN DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (spot_id) REFERENCES spots(spot_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_spot_analysis_spot_id ON spot_analysis(spot_id);
+
+-- New table for structured spot objects
+CREATE TABLE IF NOT EXISTS spot_objects (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    spot_analysis_id INTEGER NOT NULL,
+    type TEXT DEFAULT 'unknown',
+    category_name TEXT DEFAULT 'unknown',
+    confidence REAL DEFAULT 0.0,
+    location_zone TEXT DEFAULT 'unknown',
+    location_relative_position TEXT DEFAULT 'unknown',
+    location_position_description TEXT DEFAULT 'unknown',
+    condition TEXT DEFAULT 'unknown',
+    attributes_brand TEXT DEFAULT 'unknown',
+    attributes_manufacturer TEXT DEFAULT 'unknown',
+    attributes_model TEXT DEFAULT 'unknown',
+    attributes_serial_number TEXT DEFAULT 'unknown',
+    attributes_manufacture_date TEXT DEFAULT 'unknown',
+    attributes_country_of_origin TEXT DEFAULT 'unknown',
+    attributes_features TEXT,  -- JSON array
+    technical_specs_voltage TEXT DEFAULT 'unknown',
+    technical_specs_amperage TEXT DEFAULT 'unknown',
+    technical_specs_frequency TEXT DEFAULT 'unknown',
+    technical_specs_power TEXT DEFAULT 'unknown',
+    technical_specs_pressure TEXT DEFAULT 'unknown',
+    technical_specs_refrigerant TEXT DEFAULT 'unknown',
+    certifications TEXT,  -- JSON array
+    text_detected TEXT DEFAULT '',
+    text_confidence REAL DEFAULT 0.0,
+    label_analysis_label_present BOOLEAN DEFAULT 0,
+    label_analysis_label_readable BOOLEAN DEFAULT 0,
+    label_analysis_extracted_fields TEXT,  -- JSON object
+    operational_status_is_operational BOOLEAN DEFAULT 1,
+    operational_status_is_accessible BOOLEAN DEFAULT 1,
+    operational_status_is_obstructed BOOLEAN DEFAULT 0,
+    quantification_count_hint INTEGER DEFAULT 1,
+    quantification_is_part_of_group BOOLEAN DEFAULT 0,
+    notes TEXT DEFAULT 'none',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (spot_analysis_id) REFERENCES spot_analysis(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_spot_objects_spot_analysis_id ON spot_objects(spot_analysis_id);
+
 CREATE TABLE IF NOT EXISTS equipment (
     equipment_id TEXT PRIMARY KEY,
     spot_id TEXT NOT NULL,
