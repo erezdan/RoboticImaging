@@ -7,6 +7,7 @@ Processes a site by running each spot's pipeline in parallel.
 import re
 from typing import Dict, Any, List, Optional
 from pathlib import Path
+from datetime import datetime
 
 from pipeline.spot_pipeline import SpotPipeline
 from pipeline.stages.site_question_stage import SiteQuestionStage
@@ -15,7 +16,11 @@ from utils.logger import logger
 from utils.concurrency import create_thread_pool
 from utils.file_utils import file_manager
 from config.settings import settings
-from db.repositories import get_site_repository, get_spot_repository
+from db.repositories import (
+    get_site_repository,
+    get_spot_repository,
+    get_question_answer_repository,
+)
 
 
 class SitePipeline:
@@ -24,6 +29,9 @@ class SitePipeline:
     
     Loads all spots and runs spot pipelines in parallel.
     """
+
+    FINAL_REPORT_CATEGORY_NAME = "COFFEE MACHINE"
+    FINAL_REPORTS_DIR = "outputs/final_category_reports"
 
     def __init__(
         self,
@@ -48,6 +56,7 @@ class SitePipeline:
         
         self.site_repo = get_site_repository()
         self.spot_repo = get_spot_repository()
+        self.qa_repo = get_question_answer_repository()
 
         # Initialize site question stage
         self.site_question_stage = SiteQuestionStage(questions=self.questions)
@@ -146,6 +155,118 @@ class SitePipeline:
         )
         return pipeline.run()
 
+    @staticmethod
+    def _normalize_category_name(category_name: Optional[str]) -> str:
+        """Normalize category text for stable comparisons."""
+        if not category_name:
+            return ""
+
+        normalized = category_name.replace("_", " ").strip()
+        normalized = re.sub(r"\s+", " ", normalized)
+        return normalized.upper()
+
+    @staticmethod
+    def _make_safe_filename(value: str) -> str:
+        """Convert text to a filesystem-safe filename fragment."""
+        safe_value = value.strip().lower().replace(" ", "_")
+        safe_value = re.sub(r"[^a-z0-9_]+", "", safe_value)
+        return safe_value or "unknown_category"
+
+    def build_final_category_report(
+        self,
+        category_name: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Build a final site report for a specific spot category.
+
+        The report contains:
+        - Equipment inventory for matching spots with detected items, locations,
+          conditions, and confidence scores.
+        - Site attribute answers for site-level questions the system could answer.
+        """
+        category_name = category_name or self.FINAL_REPORT_CATEGORY_NAME
+        normalized_target = self._normalize_category_name(category_name)
+        spots = self.spot_repo.get_spots_by_site(self.site_id)
+
+        matching_spots = [
+            spot for spot in spots
+            if self._normalize_category_name(spot.category_name) == normalized_target
+        ]
+
+        equipment_inventory = []
+        for spot in matching_spots:
+            for obj in spot.get_vlm_objects():
+                if not obj.type or obj.type == "unknown":
+                    continue
+                equipment_inventory.append(
+                    {
+                        "spot_id": spot.spot_id,
+                        "spot_category_name": spot.category_name,
+                        "detected_item": obj.type,
+                        "location": {
+                            "zone": obj.location.zone,
+                            "relative_position": obj.location.relative_position,
+                            "position_description": obj.location.position_description,
+                        },
+                        "condition": obj.condition,
+                        "confidence": obj.confidence,
+                    }
+                )
+
+        equipment_inventory.sort(
+            key=lambda item: (
+                item.get("spot_id", ""),
+                -float(item.get("confidence", 0.0)),
+                item.get("detected_item", ""),
+            )
+        )
+
+        site_attribute_answers = []
+        for qa in self.qa_repo.get_questions_by_site(self.site_id):
+            if qa.spot_id:
+                continue
+            if qa.answer == "Not Determinable":
+                continue
+            if qa.confidence is not None and qa.confidence <= 0:
+                continue
+
+            metadata = qa.metadata if isinstance(qa.metadata, dict) else {}
+            site_attribute_answers.append(
+                {
+                    "question": qa.question,
+                    "answer": qa.answer,
+                    "confidence": qa.confidence,
+                    "reason": metadata.get("reason", ""),
+                }
+            )
+
+        report = {
+            "site_id": self.site_id,
+            "site_name": self.site_name,
+            "category_name": category_name,
+            "matched_spot_count": len(matching_spots),
+            "matched_spot_ids": [spot.spot_id for spot in matching_spots],
+            "equipment_inventory": equipment_inventory,
+            "site_attribute_answers": site_attribute_answers,
+            "generated_at": datetime.utcnow().isoformat(),
+        }
+
+        return report
+
+    def save_final_category_report(
+        self,
+        category_name: Optional[str] = None,
+    ) -> Path:
+        """Build and save the final category report under the project outputs folder."""
+        category_name = category_name or self.FINAL_REPORT_CATEGORY_NAME
+        report = self.build_final_category_report(category_name=category_name)
+        reports_dir = file_manager.ensure_directory(settings.PROJECT_ROOT / self.FINAL_REPORTS_DIR)
+        filename = f"{self.site_id}_{self._make_safe_filename(category_name)}_report.json"
+        report_path = reports_dir / filename
+        file_manager.save_json(report, report_path)
+        logger.log(f"Saved final category report: {report_path}")
+        return report_path
+
     def run(self) -> Dict[str, Any]:
         """
         Run the complete site pipeline.
@@ -209,6 +330,14 @@ class SitePipeline:
             except Exception as e:
                 logger.error(f"SiteQuestionStage failed: {str(e)}", exc_info=e)
                 site_results["site_qa_error"] = str(e)
+
+        try:
+            report_path = self.save_final_category_report()
+            site_results["final_category_report_path"] = str(report_path)
+            site_results["final_category_report_category"] = self.FINAL_REPORT_CATEGORY_NAME
+        except Exception as e:
+            logger.error(f"Final category report generation failed: {str(e)}", exc_info=e)
+            site_results["final_category_report_error"] = str(e)
 
         logger.log(f"Completed SitePipeline for site {self.site_id}")
         return site_results

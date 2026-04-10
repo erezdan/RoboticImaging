@@ -1,0 +1,244 @@
+{
+  "site_id": "18799_Fort_Street",
+  "site_name": "18799 Fort Street",
+  "category_name": "COFFEE MACHINE",
+  "matched_spot_count": 3,
+  "matched_spot_ids": [
+    "COFFEE_MACHINE_3",
+    "COFFEE_MACHINE_2",
+    "COFFEE_MACHINE_1"
+  ],
+  "equipment_inventory": [
+    {
+      "spot_id": "COFFEE_MACHINE_1",
+      "spot_category_name": "COFFEE MACHINE",
+      "detected_item": "machine",
+      "location": {
+        "zone": "service counter",
+        "relative_position": "center of beverage station, adjacent to cold beverage dispenser",
+        "position_description": "prominently displayed on a countertop, front and center"
+      },
+      "condition": "Good",
+      "confidence": 0.99
+    },
+    {
+      "spot_id": "COFFEE_MACHINE_2",
+      "spot_category_name": "COFFEE MACHINE",
+      "detected_item": "equipment",
+      "location": {
+        "zone": "customer coffee service area",
+        "relative_position": "on main countertop, front and center",
+        "position_description": "central position on counter, adjacent to condiments and cups"
+      },
+      "condition": "Good",
+      "confidence": 0.99
+    }
+  ],
+  "site_attribute_answers": [
+    {
+      "question": "What is the condition of the equipment?",
+      "answer": "Good",
+      "confidence": 0.8,
+      "reason": "Most common equipment condition across site: Good"
+    },
+    {
+      "question": "What equipment is visible?",
+      "answer": "equipment, machine",
+      "confidence": 0.9,
+      "reason": "Found 2 types of equipment across all spots in the site"
+    },
+    {
+      "question": "Is there a hand-wash sink present?",
+      "answer": "No",
+      "confidence": 0.8,
+      "reason": "Sink not found across all spots in the site"
+    },
+    {
+      "question": "Does the sales floor have LED lighting?",
+      "answer": "Yes",
+      "confidence": 0.9,
+      "reason": "LED lighting detected in at least one spot across the site"
+    },
+    {
+      "question": "What is the type of flooring?",
+      "answer": "vinyl tile",
+      "confidence": 0.8,
+      "reason": "Found flooring types across site: vinyl tile"
+    },
+    {
+      "question": "Is there an ATM present?",
+      "answer": "No",
+      "confidence": 1.0,
+      "reason": "ATM not found across all spots in the site"
+    },
+    {
+      "question": "Is there a lottery or kiosk terminal present?",
+      "answer": "No",
+      "confidence": 1.0,
+      "reason": "Lottery/kiosk terminal not found across all spots in the site"
+    },
+    {
+      "question": "Is there a 3-compartment sink present?",
+      "answer": "No",
+      "confidence": 0.8,
+      "reason": "Sink not found across all spots in the site"
+    },
+    {
+      "question": "What type of coffee machine is present?",
+      "answer": "No coffee machine present",
+      "confidence": 1.0,
+      "reason": "No coffee machines found across all spots in the site"
+    },
+    {
+      "question": "Is there a roller grill present?",
+      "answer": "No",
+      "confidence": 1.0,
+      "reason": "Roller grill not found across all spots in the site"
+    },
+    {
+      "question": "Are hot food cases present?",
+      "answer": "No",
+      "confidence": 1.0,
+      "reason": "Hot food cases not found across all spots in the site"
+    },
+    {
+      "question": "Are cold food cases present?",
+      "answer": "No",
+      "confidence": 1.0,
+      "reason": "Cold food cases not found across all spots in the site"
+    },
+    {
+      "question": "What is the total number of cold food refrigerator cases?",
+      "answer": "0",
+      "confidence": 1.0,
+      "reason": "Counted 0 cold food refrigerator cases across all spots in the site"
+    },
+    {
+      "question": "What is the total number of hot food cases?",
+      "answer": "0",
+      "confidence": 1.0,
+      "reason": "Counted 0 hot food cases across all spots in the site"
+    },
+    {
+      "question": "What is the total number of slurpee machines?",
+      "answer": "0",
+      "confidence": 1.0,
+      "reason": "Counted 0 slurpee machines across all spots in the site"
+    },
+    {
+      "question": "What is the total number of fountain dispensers?",
+      "answer": "0",
+      "confidence": 1.0,
+      "reason": "Counted 0 fountain dispensers across all spots in the site"
+    },
+    {
+      "question": "What is the total number of coffee machines?",
+      "answer": "0",
+      "confidence": 1.0,
+      "reason": "Counted 0 coffee machines across all spots in the site"
+    },
+    {
+      "question": "What is the condition of the equipment?",
+      "answer": "Good",
+      "confidence": 0.8,
+      "reason": "Most common equipment condition across site: Good"
+    },
+    {
+      "question": "What equipment is visible?",
+      "answer": "commercial refrigerator",
+      "confidence": 0.9,
+      "reason": "Found 1 types of equipment across all spots in the site"
+    },
+    {
+      "question": "Is there a hand-wash sink present?",
+      "answer": "No",
+      "confidence": 0.8,
+      "reason": "Sink not found across all spots in the site"
+    },
+    {
+      "question": "Is there a 3-compartment sink present?",
+      "answer": "No",
+      "confidence": 0.8,
+      "reason": "Sink not found across all spots in the site"
+    },
+    {
+      "question": "Is there a lottery or kiosk terminal present?",
+      "answer": "No",
+      "confidence": 1.0,
+      "reason": "Lottery/kiosk terminal not found across all spots in the site"
+    },
+    {
+      "question": "Is there an ATM present?",
+      "answer": "No",
+      "confidence": 1.0,
+      "reason": "ATM not found across all spots in the site"
+    },
+    {
+      "question": "Are hot food cases present?",
+      "answer": "No",
+      "confidence": 1.0,
+      "reason": "Hot food cases not found across all spots in the site"
+    },
+    {
+      "question": "Are cold food cases present?",
+      "answer": "Yes",
+      "confidence": 1.0,
+      "reason": "Cold food cases found across all spots in the site"
+    },
+    {
+      "question": "Does the sales floor have LED lighting?",
+      "answer": "Yes",
+      "confidence": 0.9,
+      "reason": "LED lighting detected in at least one spot across the site"
+    },
+    {
+      "question": "What is the type of flooring?",
+      "answer": "ceramic tile",
+      "confidence": 0.8,
+      "reason": "Found flooring types across site: ceramic tile"
+    },
+    {
+      "question": "Is there a roller grill present?",
+      "answer": "No",
+      "confidence": 1.0,
+      "reason": "Roller grill not found across all spots in the site"
+    },
+    {
+      "question": "What type of coffee machine is present?",
+      "answer": "No coffee machine present",
+      "confidence": 1.0,
+      "reason": "No coffee machines found across all spots in the site"
+    },
+    {
+      "question": "What is the total number of cold food refrigerator cases?",
+      "answer": "1",
+      "confidence": 1.0,
+      "reason": "Counted 1 cold food refrigerator cases across all spots in the site"
+    },
+    {
+      "question": "What is the total number of hot food cases?",
+      "answer": "0",
+      "confidence": 1.0,
+      "reason": "Counted 0 hot food cases across all spots in the site"
+    },
+    {
+      "question": "What is the total number of slurpee machines?",
+      "answer": "0",
+      "confidence": 1.0,
+      "reason": "Counted 0 slurpee machines across all spots in the site"
+    },
+    {
+      "question": "What is the total number of fountain dispensers?",
+      "answer": "0",
+      "confidence": 1.0,
+      "reason": "Counted 0 fountain dispensers across all spots in the site"
+    },
+    {
+      "question": "What is the total number of coffee machines?",
+      "answer": "0",
+      "confidence": 1.0,
+      "reason": "Counted 0 coffee machines across all spots in the site"
+    }
+  ],
+  "generated_at": "2026-04-10T09:54:15.994636"
+}
