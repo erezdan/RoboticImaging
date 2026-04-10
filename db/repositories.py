@@ -363,6 +363,30 @@ class SpotRepository:
         return spot
 
     @staticmethod
+    def get_spots_by_site(site_id: str) -> List[Spot]:
+        """
+        Get all spots for a site with full analysis data.
+
+        Args:
+            site_id: Site ID
+
+        Returns:
+            List of Spot objects with analysis data
+        """
+        rows = db.fetch_all(
+            "SELECT * FROM spots WHERE site_id = ? ORDER BY created_at DESC",
+            (site_id,),
+        )
+
+        spots = []
+        for row in rows:
+            spot = SpotRepository.get_spot(row["spot_id"])
+            if spot:
+                spots.append(spot)
+
+        return spots
+
+    @staticmethod
     def list_spots_by_site(site_id: str) -> List[Spot]:
         """
         List all spots in a site.

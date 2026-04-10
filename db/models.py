@@ -293,7 +293,7 @@ class QuestionAnswerModel:
         metadata = json.loads(row.get("metadata", "{}")) if row.get("metadata") else {}
         return QuestionAnswer(
             qa_id=row["qa_id"],
-            spot_id=row["spot_id"],
+            spot_id=row.get("spot_id"),  # Optional for site-level questions
             site_id=row["site_id"],
             question=row["question"],
             answer=row["answer"],

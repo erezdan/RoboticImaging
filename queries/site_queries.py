@@ -78,3 +78,23 @@ class SiteQueries:
             "total_questions": len(qa_list),
             "equipment_types": list(set(eq.equipment_type for eq in equipment_list)),
         }
+
+    def get_site_questions(self, site_id: str) -> List[Dict[str, Any]]:
+        """
+        Get all site-level questions for a site (questions with no spot_id).
+
+        Args:
+            site_id: Site ID
+
+        Returns:
+            List of site-level Q&A dictionaries
+        """
+        logger.log(f"Querying site-level questions for site {site_id}")
+
+        qa_repo = get_question_answer_repository()
+        qa_list = qa_repo.get_questions_by_site(site_id)
+
+        # Filter for site-level questions (no spot_id)
+        site_questions = [qa for qa in qa_list if not qa.spot_id]
+
+        return [qa.to_dict() for qa in site_questions]

@@ -9,6 +9,7 @@ from typing import Dict, Any, List, Optional
 from pathlib import Path
 
 from pipeline.spot_pipeline import SpotPipeline
+from pipeline.stages.site_question_stage import SiteQuestionStage
 from domain import Site, Spot
 from utils.logger import logger
 from utils.concurrency import create_thread_pool
@@ -47,6 +48,9 @@ class SitePipeline:
         
         self.site_repo = get_site_repository()
         self.spot_repo = get_spot_repository()
+
+        # Initialize site question stage
+        self.site_question_stage = SiteQuestionStage(questions=self.questions)
         
         # Create thread pool for parallel spot processing
         self.executor = create_thread_pool(max_workers=settings.NUM_WORKERS, debug_single_item=debug_single_spot)
@@ -175,6 +179,12 @@ class SitePipeline:
             timeout=None,
         )
 
+        # Check if all spots completed successfully
+        all_spots_completed = all(
+            r and r.get("status") == "completed" 
+            for r in results
+        )
+
         # Aggregate results
         site_results = {
             "status": "completed",
@@ -186,15 +196,30 @@ class SitePipeline:
             "spot_results": results,
         }
 
+        # Run site-level question answering if all spots completed and questions provided
+        if all_spots_completed and self.questions:
+            try:
+                logger.log(f"Running SiteQuestionStage for site {self.site_id}")
+                qa_result = self.site_question_stage.run(self.site_id)
+                site_results["site_qa"] = qa_result
+                if qa_result.get("status") == "completed":
+                    logger.log(f"[OK] Site-level questions answered for {self.site_id}")
+                else:
+                    logger.warning(f"[WARN] Site-level question answering failed: {qa_result.get('error', 'Unknown error')}")
+            except Exception as e:
+                logger.error(f"SiteQuestionStage failed: {str(e)}", exc_info=e)
+                site_results["site_qa_error"] = str(e)
+
         logger.log(f"Completed SitePipeline for site {self.site_id}")
         return site_results
 
     def set_questions(self, questions: List[str]) -> None:
         """
-        Set questions for all spots.
+        Set questions for all spots and site-level questions.
 
         Args:
             questions: List of question strings
         """
         self.questions = questions
+        self.site_question_stage.add_questions(questions)
         logger.log(f"Set {len(questions)} questions for site {self.site_id}")

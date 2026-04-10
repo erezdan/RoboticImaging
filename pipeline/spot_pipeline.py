@@ -9,7 +9,6 @@ from pathlib import Path
 
 from pipeline.stages import (
     ImageAnalysisStage,
-    QuestionStage,
     AggregationStage,
 )
 from pipeline.data_transformer import (
@@ -51,7 +50,6 @@ class SpotPipeline:
         # Initialize stages
         self.image_analysis_stage = ImageAnalysisStage()
         self.aggregation_stage = AggregationStage()
-        self.question_stage = QuestionStage(questions=self.questions)
 
         logger.log(f"Initialized SpotPipeline for spot {spot.spot_id}")
 
@@ -115,27 +113,6 @@ class SpotPipeline:
                 "error": str(e),
             }
 
-        # Stage 3: Question Answering (if questions provided)
-        if self.questions and aggregated.get("status") == "completed":
-            try:
-                logger.log(f"Running QuestionStage for spot {self.spot.spot_id}")
-                result = self.question_stage.run(
-                    self.spot.spot_id,
-                    aggregated,  # Pass aggregated data instead of image_paths
-                )
-                # Set site_id
-                if "qa" in result:
-                    for qa in result["qa"]:
-                        qa["site_id"] = self.site_id
-                stage_results.append(result)
-            except Exception as e:
-                logger.error(f"QuestionStage failed: {str(e)}", exc_info=e)
-                stage_results.append({
-                    "status": "failed",
-                    "stage": "QuestionStage",
-                    "error": str(e),
-                })
-
         # Update aggregated with final results
         if aggregated.get("status") == "completed":
             aggregated["stages"] = stage_results
@@ -166,11 +143,10 @@ class SpotPipeline:
 
     def set_questions(self, questions: List[str]) -> None:
         """
-        Set questions for the question stage.
+        Set questions for the spot pipeline.
 
         Args:
             questions: List of question strings
         """
         self.questions = questions
-        self.question_stage.add_questions(questions)
         logger.log(f"Set {len(questions)} questions for spot {self.spot.spot_id}")

@@ -302,12 +302,13 @@ class Equipment:
 class QuestionAnswer:
     """
     Represents a question asked and answer received from analysis.
-    
+
     Result of question/answer analysis stage.
+    Can be spot-level or site-level (spot_id optional for site-level).
     """
-    
+
     qa_id: str
-    spot_id: str
+    spot_id: Optional[str]  # Optional for site-level questions
     site_id: str
     question: str
     answer: str

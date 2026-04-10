@@ -105,7 +105,7 @@ CREATE INDEX IF NOT EXISTS idx_equipment_type ON equipment(equipment_type);
 
 CREATE TABLE IF NOT EXISTS question_answers (
     qa_id TEXT PRIMARY KEY,
-    spot_id TEXT NOT NULL,
+    spot_id TEXT,  -- Optional for site-level questions
     site_id TEXT NOT NULL,
     question TEXT NOT NULL,
     answer TEXT NOT NULL,
