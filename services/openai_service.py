@@ -11,7 +11,6 @@ from config.settings import settings
 from utils.logger import logger
 
 import base64
-from openai import OpenAI
 
 class OpenAIService:
     """
@@ -29,6 +28,9 @@ class OpenAIService:
             model: Model name (default from settings)
             timeout: Request timeout in seconds
         """
+        # Lazy import - defer until actually needed
+        from openai import OpenAI
+        
         self.api_key = api_key or settings.OPENAI_API_KEY
         self.model = model or settings.OPENAI_MODEL
         self.timeout = timeout or settings.OPENAI_TIMEOUT
@@ -134,5 +136,12 @@ class OpenAIService:
             return False
 
 
-# Global service instance
-openai_service = OpenAIService()
+# Global service instance (lazy initialization)
+openai_service = None
+
+def get_openai_service():
+    """Get or create the global OpenAI service instance."""
+    global openai_service
+    if openai_service is None:
+        openai_service = OpenAIService()
+    return openai_service

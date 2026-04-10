@@ -13,8 +13,12 @@ CREATE TABLE IF NOT EXISTS sites (
 CREATE TABLE IF NOT EXISTS spots (
     spot_id TEXT PRIMARY KEY,
     site_id TEXT NOT NULL,
+    category_name TEXT NOT NULL,
     image_count INTEGER DEFAULT 0,
-    metadata TEXT,  -- JSON
+    -- VLM Analysis Results (new rich schema as JSON)
+    vlm_analysis TEXT,  -- JSON SpotAnalysisModel with objects and scene
+    -- Question Answering Results
+    qa_results TEXT,  -- JSON object of Q&A results
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (site_id) REFERENCES sites(site_id)

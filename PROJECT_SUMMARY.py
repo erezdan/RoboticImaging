@@ -245,7 +245,12 @@ sites:
 spots: (linked to sites)
   - spot_id (PRIMARY KEY)
   - site_id (FK)
-  - image_count, metadata
+  - image_count
+  - VLM Analysis Results (dedicated fields):
+    • vlm_objects (JSON array)
+    • scene_flooring_type, scene_lighting
+    • scene_is_partial_view (boolean)
+  - qa_results (JSON object)
   - INDEX: site_id for fast lookups
 
 equipment: (results from stage)

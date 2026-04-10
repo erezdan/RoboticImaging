@@ -134,3 +134,54 @@ class SpotQueries:
         ]
         
         return filtered
+
+    def get_vlm_analysis(self, spot_id: str) -> Dict[str, Any]:
+        """
+        Get VLM analysis results for a spot using new rich schema.
+
+        Args:
+            spot_id: Spot ID
+
+        Returns:
+            VLM analysis dictionary with objects and scene data, or None if not found
+        """
+        logger.log(f"Querying VLM analysis for spot {spot_id}")
+
+        spot = self.spot_repo.get_spot(spot_id)
+        if not spot:
+            return None
+
+        # Return structured analysis from new schema
+        return spot.vlm_analysis.to_dict()
+
+    def get_vlm_objects(self, spot_id: str) -> List[Dict[str, Any]]:
+        """
+        Get detected objects from VLM analysis for a spot using new schema.
+
+        Args:
+            spot_id: Spot ID
+
+        Returns:
+            List of detected ObjectModel.to_dict() objects
+        """
+        spot = self.spot_repo.get_spot(spot_id)
+        if not spot:
+            return []
+
+        return [obj.to_dict() for obj in spot.get_vlm_objects()]
+
+    def get_vlm_scene(self, spot_id: str) -> Dict[str, Any]:
+        """
+        Get scene information from VLM analysis for a spot using new schema.
+
+        Args:
+            spot_id: Spot ID
+
+        Returns:
+            Scene information dictionary from SceneModel
+        """
+        spot = self.spot_repo.get_spot(spot_id)
+        if not spot:
+            return {}
+
+        return spot.get_scene_info().to_dict()

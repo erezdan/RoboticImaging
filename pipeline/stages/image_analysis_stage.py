@@ -9,7 +9,7 @@ from pathlib import Path
 import uuid
 
 from pipeline.stages.base_stage import BaseStage
-from services.openai_service import openai_service
+from services.openai_service import get_openai_service
 from services.prompt_builder import prompt_builder
 from services.response_parser import response_parser
 from utils.logger import logger
@@ -83,9 +83,10 @@ class ImageAnalysisStage(BaseStage):
             )
 
             # Call OpenAI
-            response = openai_service.analyze_images(image_paths, prompt)
+            openai_svc = get_openai_service()
+            response = openai_svc.analyze_images(image_paths, prompt)
 
-            # Parse response
+            # Parse response - now returns SpotAnalysisModel
             parsed = response_parser.parse_question_response(response)
 
             result = {
@@ -93,7 +94,7 @@ class ImageAnalysisStage(BaseStage):
                 "stage": self.stage_name,
                 "spot_id": spot_id,
                 "image_count": len(image_paths),
-                "analysis": parsed,
+                "analysis": parsed.to_dict() if parsed else {},  # Convert to dict for storage
                 "metadata": {
                     "prompt_used": prompt,
                 },

@@ -82,7 +82,7 @@ class SpotRepository:
     @staticmethod
     def save_spot(spot: Spot) -> bool:
         """
-        Save or update a spot.
+        Save or update a spot with new rich schema.
 
         Args:
             spot: Spot domain object
@@ -92,21 +92,24 @@ class SpotRepository:
         """
         try:
             query = """
-                INSERT OR REPLACE INTO spots 
-                (spot_id, site_id, image_count, metadata, created_at)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT OR REPLACE INTO spots
+                (spot_id, site_id, category_name, image_count, vlm_analysis,
+                 qa_results, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
             """
             db.execute(
                 query,
                 (
                     spot.spot_id,
                     spot.site_id,
+                    spot.category_name,
                     len(spot.image_paths),
-                    json.dumps(spot.metadata),
+                    json.dumps(spot.vlm_analysis.to_dict()),
+                    json.dumps(spot.qa_results),
                     spot.created_at.isoformat(),
                 ),
             )
-            logger.log(f"Saved spot: {spot.spot_id} in site {spot.site_id}")
+            logger.log(f"Saved spot: {spot.spot_id} in site {spot.site_id} (rich analysis persisted)")
             return True
         except Exception as e:
             logger.error(f"Failed to save spot {spot.spot_id}: {str(e)}", exc_info=e)

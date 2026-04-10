@@ -72,12 +72,12 @@ class ConcurrencyManager:
         """
         # Debug mode: process only first item
         if self.debug_single_item:
-            logger.warning(f"🐛 DEBUG MODE: Processing only first item out of {len(items)} total")
+            logger.warning(f"[DEBUG] DEBUG MODE: Processing only first item out of {len(items)} total")
             if not items:
                 return []
             try:
                 result = func(items[1])
-                logger.log(f"✓ Debug processing complete for 1 item")
+                logger.log(f"[OK] Debug processing complete for 1 item")
                 return [result]
             except Exception as e:
                 logger.error(f"Debug task failed: {str(e)}", exc_info=e)

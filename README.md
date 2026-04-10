@@ -93,11 +93,16 @@ data/sites/
 
 ### Database Schema
 
-**sites** - Metadata about each site
-**spots** - Individual spots within sites
-**equipment** - Detected equipment with confidence scores
-**question_answers** - Q&A results for each spot
-**spot_summaries** - Aggregated processing status
+**sites** - Metadata about each site  
+**spots** - Individual spots with VLM analysis results (dedicated fields):
+
+- vlm_objects: Detected objects array
+- scene_flooring_type, scene_lighting: Scene information
+- scene_is_partial_view: View completeness flag
+- qa_results: Question answering results  
+  **equipment** - Detected equipment with confidence scores  
+  **question_answers** - Q&A results for each spot  
+  **spot_summaries** - Aggregated processing status
 
 ## Installation
 

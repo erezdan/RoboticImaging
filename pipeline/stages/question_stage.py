@@ -352,7 +352,7 @@ class QuestionStage(BaseStage):
             }
 
         except Exception as e:
-            logger.error(f"QuestionStage failed for spot {spot_id}: {str(e)}", exc_info=e)
+            logger.error(f"QuestionStage failed: {str(e)}", exc_info=e)
             return {
                 "status": "failed",
                 "stage": self.stage_name,

@@ -32,17 +32,26 @@ class SpotModel:
 
     @staticmethod
     def from_dict(row: Dict[str, Any]) -> Spot:
-        """Convert database row to Spot domain object."""
+        """Convert database row to Spot domain object with new rich schema."""
         from pathlib import Path
-        
-        metadata = json.loads(row.get("metadata", "{}")) if row.get("metadata") else {}
-        return Spot(
+        from services.response_parser import response_parser
+
+        # Read VLM analysis from new vlm_analysis field
+        vlm_analysis_data = json.loads(row.get("vlm_analysis", "{}")) if row.get("vlm_analysis") else {}
+        vlm_analysis = response_parser._parse_vlm_analysis_from_dict(vlm_analysis_data) if vlm_analysis_data else SpotAnalysisModel()
+
+        qa_results = json.loads(row.get("qa_results", "{}")) if row.get("qa_results") else {}
+
+        spot = Spot(
             spot_id=row["spot_id"],
             site_id=row["site_id"],
+            category_name=row.get("category_name", "unknown"),
             image_paths=[],  # Paths are not stored in DB
-            metadata=metadata,
+            vlm_analysis=vlm_analysis,
+            qa_results=qa_results,
             created_at=datetime.fromisoformat(row["created_at"]),
         )
+        return spot
 
 
 class EquipmentModel:

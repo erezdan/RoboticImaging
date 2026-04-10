@@ -88,90 +88,145 @@ class PromptBuilder:
         category_name = context.get("category_name", "unknown")
 
         prompt = f"""
-            Analyze the provided images of the SAME physical location (multiple angles of the same spot).
+    Analyze the provided images of the SAME physical location (multiple angles of the same spot).
 
-            The category of this spot is: {category_name}
+    The category of this spot is: {category_name}
 
-            Your goal is to identify UNIQUE physical objects and extract structured information.
+    Your goal is to identify UNIQUE physical objects and extract rich, structured, and generic information.
 
-            Return ONLY a valid JSON object with the following structure:
+    This includes:
+    - visual detection
+    - condition assessment
+    - OCR from labels / nameplates
+    - extraction of technical specifications
 
-            {{
-            "objects": [
-                {{
-                "type": "string",
-                "category_name": "{category_name}",
-                "confidence": 0.0,
-                "attributes": {{
-                    "brand": "string",
-                    "model": "string",
-                    "condition": "Good | Fair | Poor",
-                    "features": ["string"]
-                }},
-                "text": {{
-                    "detected": "string",
-                    "confidence": 0.0
-                }}
-                }}
-            ],
-            "scene": {{
-                "flooring_type": "string | unknown",
-                "lighting": "LED | not LED | unknown",
-                "is_partial_view": true
+    Return ONLY a valid JSON object with the following structure:
+
+    {{
+    "objects": [
+        {{
+        "type": "string",
+        "category_name": "{category_name}",
+        "confidence": 0.0,
+
+        "location": {{
+            "zone": "string | unknown",
+            "relative_position": "string | unknown",
+            "position_description": "string | unknown"
+        }},
+
+        "condition": "Good | Fair | Poor | unknown",
+
+        "attributes": {{
+            "brand": "string | unknown",
+            "manufacturer": "string | unknown",
+            "model": "string | unknown",
+            "serial_number": "string | unknown",
+            "manufacture_date": "string | unknown",
+            "country_of_origin": "string | unknown",
+            "features": ["string"]
+        }},
+
+        "technical_specs": {{
+            "voltage": "string | unknown",
+            "amperage": "string | unknown",
+            "frequency": "string | unknown",
+            "power": "string | unknown",
+            "pressure": "string | unknown",
+            "refrigerant": "string | unknown"
+        }},
+
+        "certifications": [
+            "UL",
+            "NSF",
+            "CE"
+        ],
+
+        "text": {{
+            "detected": "string",
+            "confidence": 0.0
+        }},
+
+        "label_analysis": {{
+            "label_present": true,
+            "label_readable": true,
+            "extracted_fields": {{
+            "manufacturer": "string | unknown",
+            "model": "string | unknown",
+            "serial_number": "string | unknown"
             }}
-            }}
+        }},
 
-            CRITICAL RULES:
+        "operational_status": {{
+            "is_operational": true,
+            "is_accessible": true,
+            "is_obstructed": false
+        }},
 
-            1. UNIQUE OBJECTS ONLY
-            - The images show the SAME area from multiple angles
-            - The same object may appear in multiple images
-            - DO NOT duplicate objects
-            - Each physical object must appear ONLY ONCE in the output
+        "quantification": {{
+            "count_hint": 1,
+            "is_part_of_group": false
+        }},
 
-            2. MERGE ACROSS IMAGES
-            - Combine information from all images
-            - If an object appears in multiple images:
-            - merge its attributes
-            - increase confidence if consistent
+        "notes": "string | none"
+        }}
+    ],
 
-            3. USE CATEGORY HINT
-            - Use "{category_name}" as context to improve classification
-            - Prefer object types relevant to this category
+    "scene": {{
+        "flooring_type": "string | unknown",
+        "lighting": "LED | not LED | unknown",
+        "environment_type": "indoor | outdoor | mixed | unknown",
 
-            4. OBJECT DETECTION
-            - Include all visible equipment and machines
-            - Use consistent naming:
-            - "coffee_machine"
-            - "fountain_dispenser"
-            - "refrigerator"
-            - "hot_food_case"
-            - Avoid synonyms for the same object
+        "visibility": {{
+        "is_partial_view": true,
+        "occlusions_present": false
+        }}
+    }}
+    }}
 
-            5. CONDITION ESTIMATION
-            - Good: clean, intact, well-maintained
-            - Fair: minor wear, some visible issues
-            - Poor: damaged, dirty, or broken
+    CRITICAL RULES:
 
-            6. TEXT EXTRACTION
-            - Extract visible labels, brands, or model numbers
-            - If unclear, leave empty or "unknown"
+    1. UNIQUE OBJECTS ONLY
+    - The same object may appear in multiple images
+    - DO NOT duplicate objects
+    - Merge observations across images
 
-            7. SCENE ANALYSIS
-            - flooring_type: infer from visible floor material
-            - lighting: LED if modern bright uniform lighting, otherwise not LED or unknown
-            - is_partial_view: true if the full area is not visible
+    2. LABEL / OCR ANALYSIS (VERY IMPORTANT)
+    - Detect equipment labels, stickers, nameplates
+    - Perform OCR on labels
+    - Extract structured data:
+    - manufacturer
+    - model
+    - serial number
+    - technical specs
 
-            8. UNCERTAINTY
-            - If unsure, lower confidence
-            - If not visible, use "unknown"
+    3. PRIORITIZE LABEL DATA OVER VISUAL GUESS
+    - If label exists → trust label
+    - If conflict → label wins
 
-            9. OUTPUT FORMAT
-            - Return ONLY valid JSON
-            - No explanations
-            - No extra text
+    4. PARTIAL VISIBILITY
+    - If label is partially visible:
+    - extract what you can
+    - fill missing fields with "unknown"
 
-        """
+    5. TECHNICAL EXTRACTION
+    - Normalize values where possible:
+    - voltage (e.g., "120V")
+    - frequency (e.g., "60Hz")
+    - power (e.g., "1800W")
+
+    6. CONDITION
+    - Good / Fair / Poor based on visible wear
+
+    7. COMPLETE STRUCTURE
+    - NEVER omit fields
+    - If missing → use "unknown" or null-equivalent
+
+    8. OUTPUT STRICTLY JSON
+    - No explanations
+    - No extra text
+
+    """
         return prompt.strip()
 
     @staticmethod

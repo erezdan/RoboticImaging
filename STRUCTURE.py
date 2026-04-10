@@ -69,7 +69,26 @@ RoboticImaging/
 │       │   └─ site_id, name, location, metadata, created_at
 │       │
 │       ├─ Spot (dataclass) - PROCESSING UNIT
-│       │   └─ spot_id, site_id, image_paths[], metadata, created_at
+│       │   └─ spot_id, site_id, category_name, image_paths[]
+│       │     ├─ VLM Analysis Results (NEW RICH SCHEMA)
+│       │     │   └─ vlm_analysis: SpotAnalysisModel
+│       │     │       ├─ objects[] - ObjectModel[]
+│       │     │       │   ├─ type, category_name, confidence
+│       │     │       │   ├─ location: LocationModel
+│       │     │       │   ├─ condition
+│       │     │       │   ├─ attributes: AttributesModel
+│       │     │       │   │   └─ brand, manufacturer, model, serial_number, etc.
+│       │     │       │   ├─ technical_specs: TechnicalSpecsModel
+│       │     │       │   ├─ certifications[]
+│       │     │       │   ├─ text: TextModel
+│       │     │       │   ├─ label_analysis: LabelAnalysisModel
+│       │     │       │   ├─ operational_status: OperationalStatusModel
+│       │     │       │   ├─ quantification: QuantificationModel
+│       │     │       │   └─ notes
+│       │     │       └─ scene: SceneModel
+│       │     │           ├─ flooring_type, lighting, environment_type
+│       │     │           └─ visibility: VisibilityModel
+│       │     └─ qa_results{} - question answering results
 │       │
 │       ├─ Equipment (dataclass) - ANALYSIS RESULT
 │       │   └─ equipment_id, spot_id, site_id, type, confidence, location
@@ -85,6 +104,8 @@ RoboticImaging/
 │   ├── schema.sql (SQLite Schema)
 │   │   ├─ sites table
 │   │   ├─ spots table (FK to sites)
+│   │   │   ├─ vlm_analysis TEXT (NEW - SpotAnalysisModel.to_dict() as JSON)
+│   │   │   └─ Legacy fields removed (vlm_objects, scene_flooring_type, etc.)
 │   │   ├─ equipment table (FK to spots, sites)
 │   │   ├─ question_answers table (FK to spots, sites)
 │   │   ├─ spot_summaries table (aggregation)

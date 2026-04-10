@@ -76,9 +76,13 @@ class AggregationStage(BaseStage):
                     "error": "No VLM analysis results found",
                 }
             
-            # Get objects from VLM analysis
-            objects = vlm_result["analysis"].get("objects", [])
-            scene = vlm_result["analysis"].get("scene", {})
+            # Get objects from VLM analysis (now from SpotAnalysisModel.to_dict())
+            analysis = vlm_result["analysis"]
+            objects = analysis.get("objects", [])
+            scene = analysis.get("scene", {})
+
+            # Deduplicate objects using new schema
+            deduplicated_objects = self.deduplicate_objects(objects)
             
             # Deduplicate objects
             deduplicated_objects = self.deduplicate_objects(objects)
@@ -116,96 +120,121 @@ class AggregationStage(BaseStage):
 
     def deduplicate_objects(self, objects: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
-        Deduplicate objects within a spot based on object type.
+        Deduplicate objects within a spot based on object type using new rich schema.
 
         Args:
-            objects: List of objects from VLM analysis
+            objects: List of objects from VLM analysis (ObjectModel.to_dict() format)
 
         Returns:
             Deduplicated list of objects
         """
         if not objects:
             return []
-        
+
         # Group by object type
         type_groups = {}
         for obj in objects:
             obj_type = obj.get("type", "").strip().lower()
             if not obj_type:
                 continue
-            
+
             if obj_type not in type_groups:
                 type_groups[obj_type] = []
             type_groups[obj_type].append(obj)
-        
+
         deduplicated = []
-        
+
         for obj_type, group in type_groups.items():
             if len(group) == 1:
                 # No duplicates
                 deduplicated.append(group[0])
             else:
-                # Merge duplicates
-                merged = self._merge_objects(group)
+                # Merge duplicates using new schema
+                merged = self._merge_objects_new_schema(group)
                 deduplicated.append(merged)
-        
+
         logger.debug(f"Deduplicated {len(objects)} objects to {len(deduplicated)}")
         return deduplicated
 
-    def _merge_objects(self, objects: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _merge_objects_new_schema(self, objects: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
-        Merge multiple objects of the same type.
+        Merge multiple objects of the same type using new rich schema.
 
         Args:
-            objects: List of objects with same type
+            objects: List of objects with same type (ObjectModel.to_dict() format)
 
         Returns:
             Single merged object
         """
         if not objects:
             return {}
-        
+
         # Start with the first object
         merged = objects[0].copy()
-        
+
         # Keep highest confidence
         max_conf = max(obj.get("confidence", 0.0) for obj in objects)
         merged["confidence"] = max_conf
-        
-        # Merge attributes conservatively
+
+        # Merge attributes from new schema
         all_brands = set()
+        all_manufacturers = set()
         all_models = set()
         all_features = set()
         conditions = []
-        
+        certifications = set()
+
         for obj in objects:
             attrs = obj.get("attributes", {})
-            all_brands.add(attrs.get("brand", ""))
-            all_models.add(attrs.get("model", ""))
+            all_brands.add(attrs.get("brand", "unknown"))
+            all_manufacturers.add(attrs.get("manufacturer", "unknown"))
+            all_models.add(attrs.get("model", "unknown"))
             features = attrs.get("features", [])
             if isinstance(features, list):
                 all_features.update(features)
-            condition = attrs.get("condition", "")
-            if condition:
+
+            condition = obj.get("condition", "unknown")
+            if condition and condition != "unknown":
                 conditions.append(condition)
-        
-        # Choose most common or first non-empty
-        merged["attributes"]["brand"] = next((b for b in all_brands if b), "")
-        merged["attributes"]["model"] = next((m for m in all_models if m), "")
+
+            certs = obj.get("certifications", [])
+            if isinstance(certs, list):
+                certifications.update(certs)
+
+        # Update merged attributes
+        merged["attributes"]["brand"] = next((b for b in all_brands if b and b != "unknown"), "unknown")
+        merged["attributes"]["manufacturer"] = next((m for m in all_manufacturers if m and m != "unknown"), "unknown")
+        merged["attributes"]["model"] = next((m for m in all_models if m and m != "unknown"), "unknown")
         merged["attributes"]["features"] = list(all_features)
-        
-        # For condition, prefer "Good" if any, else most common
-        if "Good" in conditions:
-            merged["attributes"]["condition"] = "Good"
-        elif conditions:
-            merged["attributes"]["condition"] = max(set(conditions), key=conditions.count)
-        
+        merged["certifications"] = list(certifications)
+
+        # Merge condition - prefer best condition
+        condition_priority = {"Good": 3, "Fair": 2, "Poor": 1, "unknown": 0}
+        if conditions:
+            best_condition = max(conditions, key=lambda c: condition_priority.get(c, 0))
+            merged["condition"] = best_condition
+
         # Merge text detections (keep highest confidence)
         text_detections = [obj.get("text", {}) for obj in objects if obj.get("text")]
         if text_detections:
             best_text = max(text_detections, key=lambda t: t.get("confidence", 0.0))
             merged["text"] = best_text
-        
+
+        # Merge label analysis - prefer readable labels
+        label_analyses = [obj.get("label_analysis", {}) for obj in objects if obj.get("label_analysis")]
+        if label_analyses:
+            readable_labels = [la for la in label_analyses if la.get("label_readable", False)]
+            if readable_labels:
+                # Merge extracted fields from readable labels
+                merged_fields = {}
+                for la in readable_labels:
+                    fields = la.get("extracted_fields", {})
+                    for key, value in fields.items():
+                        if value and value != "unknown":
+                            merged_fields[key] = value
+                merged["label_analysis"]["extracted_fields"] = merged_fields
+                merged["label_analysis"]["label_readable"] = True
+
         return merged
 
     @staticmethod
