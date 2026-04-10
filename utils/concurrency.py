@@ -10,6 +10,18 @@ from contextlib import contextmanager
 
 from utils.logger import logger
 
+DEBUG_ITEMS = [
+    "COFFEE_MACHINE_1",
+    "COFFEE_MACHINE_2",
+    "COFFEE_MACHINE_3",
+    "BEVERAGE_REPRIGERATORE_1",
+    "BEVERAGE_REPRIGERATORE_2",
+    "BEVERAGE_REPRIGERATORE_3",
+    "FREEZER_1",
+    "FREEZER_2",
+    "SODA_DISPENSER",
+    "TEA_DISPENSER",
+]
 
 class ConcurrencyManager:
     """
@@ -58,37 +70,41 @@ class ConcurrencyManager:
         func: Callable,
         items: List[Any],
         timeout: Optional[int] = None
-    ) -> List[Any]:
-        """
-        Execute function on multiple items in parallel.
+        ) -> List[Any]:
 
-        Args:
-            func: Function to execute
-            items: Items to process
-            timeout: Optional timeout in seconds
-
-        Returns:
-            List of results in same order as items
-        """
-        # Debug mode: process only first item
+        # Debug mode: process predefined subset
         if self.debug_single_item:
-            logger.warning(f"[DEBUG] DEBUG MODE: Processing only first item out of {len(items)} total")
+            logger.warning(f"[DEBUG] DEBUG MODE: Processing predefined subset")
+
             if not items:
                 return []
-            try:
-                result = func(items[1])
-                logger.log(f"[OK] Debug processing complete for 1 item")
-                return [result]
-            except Exception as e:
-                logger.error(f"Debug task failed: {str(e)}", exc_info=e)
-                return [None]
-        
+
+            # Filter items based on predefined debug list
+            debug_items = [
+                item for item in items
+                if self._is_debug_item(item)
+            ]
+
+            logger.log(f"[DEBUG] Selected {len(debug_items)} items for debug run")
+
+            results = []
+            for i, item in enumerate(debug_items):
+                try:
+                    result = func(item)
+                    results.append(result)
+                except Exception as e:
+                    logger.error(f"Debug task {i} failed: {str(e)}", exc_info=e)
+                    results.append(None)
+
+            return results
+
+        # --- original logic unchanged ---
         logger.debug(f"Executing {len(items)} items in parallel ({self.executor_type})")
-        
+
         with self.get_executor() as executor:
             futures = [executor.submit(func, item) for item in items]
             results = []
-            
+
             for i, future in enumerate(futures):
                 try:
                     result = future.result(timeout=timeout)
@@ -96,8 +112,21 @@ class ConcurrencyManager:
                 except Exception as e:
                     logger.error(f"Task {i} failed: {str(e)}", exc_info=e)
                     results.append(None)
-        
+
         return results
+
+
+    def _is_debug_item(self, item: Any) -> bool:
+        """
+        Define how to match debug items.
+        Adjust according to your object structure.
+        """
+        # Example: if item has spot_id
+        if hasattr(item, "spot_id"):
+            return item.spot_id in DEBUG_ITEMS
+
+        # fallback (if items are plain IDs)
+        return item in DEBUG_ITEMS
 
 
 def create_thread_pool(max_workers: int = 4, debug_single_item: bool = False) -> ConcurrencyManager:
